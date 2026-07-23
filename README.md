@@ -1201,7 +1201,7 @@ tx.Commit()
 
 ## 十一、API SQL 与索引分析
 
-### 10.1 用户注册 (Register)
+### 11.1 用户注册 (Register)
 
 **执行的SQL**:
 ```sql
@@ -1218,7 +1218,7 @@ SELECT COUNT(*) FROM users WHERE username = ? OR email = ? LIMIT 1
 
 ---
 
-### 10.2 用户登录 (Login)
+### 11.2 用户登录 (Login)
 
 **执行的SQL**:
 ```sql
@@ -1238,7 +1238,7 @@ SELECT * FROM users WHERE email = ? LIMIT 1
 
 ---
 
-### 10.3 获取用户信息 (GetUser)
+### 11.3 获取用户信息 (GetUser)
 
 **执行的SQL**:
 ```sql
@@ -1256,7 +1256,7 @@ SELECT * FROM users WHERE username = ? LIMIT 1
 
 ---
 
-### 10.4 获取用户列表 (GetUsers)
+### 11.4 获取用户列表 (GetUsers)
 
 **执行的SQL**:
 ```sql
@@ -1276,7 +1276,7 @@ SELECT * FROM users WHERE role = ? ORDER BY created_at DESC LIMIT ? OFFSET ?
 
 ---
 
-### 10.5 Token 操作
+### 11.5 Token 操作
 
 **登录时创建Token**:
 ```sql
@@ -1294,7 +1294,7 @@ SELECT * FROM tokens WHERE token = ? LIMIT 1
 
 ---
 
-### 10.6 黑名单操作
+### 11.6 黑名单操作
 
 **检查是否在黑名单**:
 ```sql

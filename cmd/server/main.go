@@ -74,9 +74,33 @@ func NewServer(cfg *config.Config) *Server {
 		Timeout:     constants.DefaultCBTimeout * time.Second,
 	})
 
-	// 自动迁移
-	if err := db.AutoMigrate(&model.User{}, &model.Token{}, &model.UserBlacklist{}); err != nil {
-		log.Fatalf("Failed to migrate database: %v", err)
+	// 自动迁移（分布式锁保护，多实例只有一个执行）
+	const migrationLockKey = "migration:lock:user_service"
+	const migrationLockTTL = 60 * time.Second
+	hostname, _ := os.Hostname()
+	instanceID := fmt.Sprintf("%s-%d", hostname, os.Getpid())
+
+	acquired, err := cache.TryLock(context.Background(), migrationLockKey, instanceID, migrationLockTTL)
+	if err != nil {
+		log.Warnf("Failed to acquire migration lock (Redis unavailable): %v, proceeding without lock", err)
+	} else if acquired {
+		log.Infof("Migration lock acquired by instance %s", instanceID)
+		defer func() {
+			if unlockErr := cache.Unlock(context.Background(), migrationLockKey, instanceID); unlockErr != nil {
+				log.Warnf("Failed to release migration lock: %v", unlockErr)
+			}
+		}()
+	} else {
+		log.Info("Migration lock held by another instance, skipping AutoMigrate")
+		// 等待持有锁的实例完成迁移（最多等锁过期）
+		time.Sleep(2 * time.Second)
+	}
+
+	// 只有获取到锁（或 Redis 不可用）时才执行迁移
+	if acquired || err != nil {
+		if migrateErr := db.AutoMigrate(&model.User{}, &model.Token{}, &model.UserBlacklist{}); migrateErr != nil {
+			log.Fatalf("Failed to migrate database: %v", migrateErr)
+		}
 	}
 
 	// 初始化仓储层
