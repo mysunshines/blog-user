@@ -11,6 +11,10 @@ BIN_DIR=bin
 # 容器端口映射（docker-run 使用，按服务实际情况修改）
 PORTS=8081:8081 9001:9001 9091:9091
 
+# 版本号：优先取 git describe，失败回退 dev
+GIT_VERSION      := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+VERSION_LDFLAGS := -X main.Version=$(GIT_VERSION)
+
 # 默认目标
 all: build
 
@@ -46,7 +50,7 @@ fmt:
 # 编译服务
 build: deps proto fmt
 	mkdir -p $(BIN_DIR)
-	go build -o $(BIN_DIR)/$(BINARY_NAME) $(SRC_DIR)/main.go
+	go build -ldflags "$(VERSION_LDFLAGS)" -o $(BIN_DIR)/$(BINARY_NAME) $(SRC_DIR)/main.go
 
 # 运行服务
 run:
@@ -62,7 +66,7 @@ clean:
 
 # Docker 构建（构建上下文为当前服务目录）
 docker-build:
-	docker build -t $(SERVICE_NAME):latest .
+	docker build --build-arg GIT_VERSION=$(GIT_VERSION) -t $(SERVICE_NAME):latest .
 
 # Docker 运行
 docker-run:

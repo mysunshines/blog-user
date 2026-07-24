@@ -19,8 +19,13 @@ RUN go mod download
 # 复制源代码
 COPY . .
 
+# 版本号（docker build --build-arg GIT_VERSION=xxx 注入，默认 dev）
+ARG GIT_VERSION=dev
+
 # 编译
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o user-service ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo \
+    -ldflags "-X main.Version=${GIT_VERSION}" \
+    -o user-service ./cmd/server
 
 # 运行阶段
 FROM alpine:latest
