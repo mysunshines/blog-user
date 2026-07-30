@@ -23,6 +23,7 @@ import (
 	"github.com/mysunshines/gocommon/log"
 	"github.com/mysunshines/gocommon/metrics"
 	commonmiddleware "github.com/mysunshines/gocommon/middleware"
+	"github.com/mysunshines/gocommon/consul"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -78,33 +79,7 @@ func NewServer(cfg *config.Config) *Server {
 	})
 
 	// 自动迁移（分布式锁保护，多实例只有一个执行）
-	const migrationLockKey = "migration:lock:user_service"
-	const migrationLockTTL = 60 * time.Second
-	hostname, _ := os.Hostname()
-	instanceID := fmt.Sprintf("%s-%d", hostname, os.Getpid())
-
-	acquired, err := cache.TryLock(context.Background(), migrationLockKey, instanceID, migrationLockTTL)
-	if err != nil {
-		log.Warnf("Failed to acquire migration lock (Redis unavailable): %v, proceeding without lock", err)
-	} else if acquired {
-		log.Infof("Migration lock acquired by instance %s", instanceID)
-		defer func() {
-			if unlockErr := cache.Unlock(context.Background(), migrationLockKey, instanceID); unlockErr != nil {
-				log.Warnf("Failed to release migration lock: %v", unlockErr)
-			}
-		}()
-	} else {
-		log.Info("Migration lock held by another instance, skipping AutoMigrate")
-		// 等待持有锁的实例完成迁移（最多等锁过期）
-		time.Sleep(2 * time.Second)
-	}
-
-	// 只有获取到锁（或 Redis 不可用）时才执行迁移
-	if acquired || err != nil {
-		if migrateErr := db.AutoMigrate(&model.User{}, &model.Token{}, &model.UserBlacklist{}); migrateErr != nil {
-			log.Fatalf("Failed to migrate database: %v", migrateErr)
-		}
-	}
+	runDBMigration(db, "migration:lock:user_service", &model.User{}, &model.Token{}, &model.UserBlacklist{})
 
 	// 初始化仓储层
 	userRepo := repository.NewUserRepository(db)
@@ -162,6 +137,67 @@ func (s *Server) Run() error {
 	return nil
 }
 
+// loadConfig 解析配置路径并加载配置，加载失败时直接终止进程。
+func loadConfig() *config.Config {
+	configPath := os.Getenv(constants.EnvConfigPath)
+	if configPath == "" {
+		configPath = constants.DefaultConfigPath
+	}
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+	return cfg
+}
+
+// registerToConsul 向 Consul 注册本服务实例，返回取消注册函数。
+// 注册失败不致命（降级运行），返回 nil。
+func registerToConsul(cfg *config.Config) func() error {
+	deregister, err := consul.Register(consul.Registration{
+		Name:               cfg.App.Name,
+		ConsulAddress:      cfg.Consul.Address,
+		GRPCPort:           cfg.GRPC.Port,
+		HTTPPort:           cfg.HTTP.Port,
+		CheckInterval:      cfg.Consul.CheckInterval,
+		DeregisterCritical: cfg.Consul.DeregisterCritical,
+	})
+	if err != nil {
+		log.Warnf("failed to register to consul: %v", err)
+		return nil
+	}
+	return deregister
+}
+
+// runDBMigration 在分布式锁保护下执行 GORM AutoMigrate。
+// 多实例部署时仅一个实例执行建表/补列，避免并发 ALTER 产生元数据争用。
+// Redis 不可用时降级为直接迁移（GORM AutoMigrate 本身幂等）。
+func runDBMigration(db interface{ AutoMigrate(dst ...interface{}) error }, lockKey string, models ...interface{}) {
+	const migrationLockTTL = 60 * time.Second
+	hostname, _ := os.Hostname()
+	instanceID := fmt.Sprintf("%s-%d", hostname, os.Getpid())
+
+	acquired, err := cache.TryLock(context.Background(), lockKey, instanceID, migrationLockTTL)
+	if err != nil {
+		log.Warnf("Failed to acquire migration lock (Redis unavailable): %v, proceeding without lock", err)
+	} else if acquired {
+		log.Infof("Migration lock acquired by instance %s", instanceID)
+		defer func() {
+			if unlockErr := cache.Unlock(context.Background(), lockKey, instanceID); unlockErr != nil {
+				log.Warnf("Failed to release migration lock: %v", unlockErr)
+			}
+		}()
+	} else {
+		log.Info("Migration lock held by another instance, skipping AutoMigrate")
+		time.Sleep(2 * time.Second)
+	}
+
+	if acquired || err != nil {
+		if migrateErr := db.AutoMigrate(models...); migrateErr != nil {
+			log.Fatalf("Failed to migrate database: %v", migrateErr)
+		}
+	}
+}
+
 func (s *Server) runHTTPServer() {
 	if s.cfg.App.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -172,6 +208,9 @@ func (s *Server) runHTTPServer() {
 	router.Use(commonmiddleware.RecoveryMiddleware())
 	router.Use(commonmiddleware.LoggingMiddleware())
 	router.Use(commonmiddleware.CORSMiddleware())
+	// 限制请求体大小，防大请求体 DoS
+	router.Use(commonmiddleware.ValidateRequestMiddleware())
+	router.Use(commonmiddleware.CSRFMiddleware())
 	router.Use(commonmiddleware.MetricsMiddleware(constants.ServiceNameUser))
 	router.Use(commonmiddleware.TraceMiddleware())
 
@@ -223,12 +262,13 @@ func (s *Server) runHTTPServer() {
 		{
 			// 公开接口
 			userGroup.POST("/register", s.userHandl.Register)
+			userGroup.POST("/send-code", s.userHandl.SendVerificationCode)
 			userGroup.POST("/login", s.userHandl.Login)
 			userGroup.POST("/validate", s.userHandl.ValidateToken)
 
 			// 需要认证的接口
-			authGroup := userGroup.Group("")
-			authGroup.Use(commonmiddleware.JWTValidMiddleware())
+		authGroup := userGroup.Group("")
+		authGroup.Use(commonmiddleware.JWTValidMiddleware(), commonmiddleware.ContextMiddleware())
 			{
 				authGroup.POST("/logout", s.userHandl.Logout)
 				authGroup.GET("", s.userHandl.GetUser)
@@ -244,7 +284,7 @@ func (s *Server) runHTTPServer() {
 		}
 
 		// 用户列表（需要认证）
-		api.GET("/users", commonmiddleware.JWTValidMiddleware(), s.userHandl.GetUsers)
+		api.GET("/users", commonmiddleware.JWTValidMiddleware(), commonmiddleware.ContextMiddleware(), s.userHandl.GetUsers)
 	}
 
 	addr := s.cfg.HTTP.Addr()
@@ -283,7 +323,7 @@ func (s *Server) runGRPCServer() {
 			MinTime:             5 * time.Minute,
 			PermitWithoutStream: true,
 		}),
-		grpc.UnaryInterceptor(s.grpcUnaryInterceptor),
+		grpc.ChainUnaryInterceptor(s.grpcUnaryInterceptor, commonmiddleware.GRPCAuthInterceptor()),
 	}
 
 	s.grpcServer = grpc.NewServer(grpcOpts...)
@@ -325,25 +365,18 @@ func (s *Server) runMetricsServer() {
 }
 
 func main() {
-	// 加载配置（从项目根目录加载）
-	configPath := os.Getenv(constants.EnvConfigPath)
-	if configPath == "" {
-		// 默认从当前目录加载
-		configPath = constants.DefaultConfigPath
-	}
-	cfg, err := config.Load(configPath)
-	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
-	}
+	cfg := loadConfig()
 
-	// 初始化日志
 	log.Init(cfg.App.LogDir, cfg.App.LogLevel, constants.ServiceNameUser)
-
-	// 初始化指标
 	metrics.Init()
 
-	// 创建并运行服务器
 	server := NewServer(cfg)
+
+	deregister := registerToConsul(cfg)
+	if deregister != nil {
+		defer deregister()
+	}
+
 	defer common_database.Close()
 	defer cache.Close()
 	defer log.StopRotation()

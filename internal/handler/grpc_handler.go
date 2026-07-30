@@ -8,6 +8,7 @@ import (
 	user "github.com/mysunshines/blog-user/proto/pb"
 
 	"github.com/mysunshines/gocommon/constants"
+	"github.com/mysunshines/gocommon/middleware"
 
 	"github.com/sony/gobreaker"
 )
@@ -115,8 +116,12 @@ func (h *GrpcUserHandler) ValidateToken(ctx context.Context, req *user.ValidateT
 }
 
 func (h *GrpcUserHandler) UpdateUser(ctx context.Context, req *user.UpdateUserRequest) (*user.UpdateUserResponse, error) {
+	uid, err := middleware.RequireGRPCAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
 	result, err := h.Svc.UpdateUser(ctx, &model.UpdateUserRequest{
-		UserID:   uint(req.UserId),
+		UserID:   uid,
 		Nickname: req.Nickname,
 		Avatar:   req.Avatar,
 		Bio:      req.Bio,
@@ -136,6 +141,9 @@ func (h *GrpcUserHandler) UpdateUser(ctx context.Context, req *user.UpdateUserRe
 }
 
 func (h *GrpcUserHandler) DeleteUser(ctx context.Context, req *user.DeleteUserRequest) (*user.DeleteUserResponse, error) {
+	if _, err := middleware.RequireGRPCAuth(ctx); err != nil {
+		return nil, err
+	}
 	err := h.Svc.DeleteUser(ctx, uint(req.UserId))
 	if err != nil {
 		return &user.DeleteUserResponse{
@@ -186,8 +194,12 @@ func (h *GrpcUserHandler) GetUsers(ctx context.Context, req *user.GetUsersReques
 }
 
 func (h *GrpcUserHandler) ChangePassword(ctx context.Context, req *user.ChangePasswordRequest) (*user.ChangePasswordResponse, error) {
-	err := h.Svc.ChangePassword(ctx, &model.ChangePasswordRequest{
-		UserID:      uint(req.UserId),
+	uid, err := middleware.RequireGRPCAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = h.Svc.ChangePassword(ctx, &model.ChangePasswordRequest{
+		UserID:      uid,
 		OldPassword: req.OldPassword,
 		NewPassword: req.NewPassword,
 	})
@@ -205,8 +217,12 @@ func (h *GrpcUserHandler) ChangePassword(ctx context.Context, req *user.ChangePa
 }
 
 func (h *GrpcUserHandler) AddToBlacklist(ctx context.Context, req *user.BlacklistRequest) (*user.BlacklistResponse, error) {
-	err := h.Svc.AddToBlacklist(ctx, &model.BlacklistRequest{
-		UserID:       uint(req.UserId),
+	uid, err := middleware.RequireGRPCAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = h.Svc.AddToBlacklist(ctx, &model.BlacklistRequest{
+		UserID:       uid,
 		TargetUserID: uint(req.TargetUserId),
 		Reason:       req.Reason,
 	})
@@ -224,8 +240,12 @@ func (h *GrpcUserHandler) AddToBlacklist(ctx context.Context, req *user.Blacklis
 }
 
 func (h *GrpcUserHandler) RemoveFromBlacklist(ctx context.Context, req *user.BlacklistRequest) (*user.BlacklistResponse, error) {
-	err := h.Svc.RemoveFromBlacklist(ctx, &model.BlacklistRequest{
-		UserID:       uint(req.UserId),
+	uid, err := middleware.RequireGRPCAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = h.Svc.RemoveFromBlacklist(ctx, &model.BlacklistRequest{
+		UserID:       uid,
 		TargetUserID: uint(req.TargetUserId),
 		Reason:       req.Reason,
 	})
