@@ -1,28 +1,48 @@
-server:
+app:
   name: "user-service"
-  port: 50053
+  env: "test"
   log_level: "debug"
 
-consul:
-  address: "consul:8500"
-  scheme: "http"
+grpc:
+  host: "0.0.0.0"
+  port: 9001
 
-mysql:
+http:
+  host: "0.0.0.0"
+  port: 8081
+
+database:
   host: "mysql"
   port: 3306
   user: "root"
   password: "root123"
-  database: "blog"
+  name: "blog"
+  max_open_conns: 25
 
 redis:
-  addr: "redis:6379"
+  host: "redis"
+  port: 6379
   password: ""
   db: 0
 
-tracing:
+consul:
+  address: "consul:8500"
+
+micro:
+  registry:
+    type: consul
+    address: "consul:8500"
+    timeout: 5
+
+metrics:
   enabled: true
-  jaeger_endpoint: "http://jaeger:14268/api/traces"
+  port: 9091
 
 jwt:
   secret: "test-secret-key-do-not-use-in-production"
-  expire_hours: 24
+  expire_time: 604800
+
+rate_limit:
+  enabled: true
+  qps: 1000
+  burst: 2000

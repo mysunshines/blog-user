@@ -6,7 +6,7 @@ app:
 
 grpc:
   host: "0.0.0.0"
-  port: 9090
+  port: 9001
 
 # HTTP 服务配置（健康检查 / 就绪探针；业务 API 亦经此端口，便于直连调试）
 http:

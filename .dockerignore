@@ -1,0 +1,42 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Logs
+logs/
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+bin/
+*.exe
+*.test
+*.out
+__debug_bin
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Docs
+*.md
+README*
+
+# CI
+.github/
+.gitlab-ci.yml
+
+# Env
+.env
+.env.*

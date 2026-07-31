@@ -1,53 +1,48 @@
-# 构建阶段
+# syntax=docker/dockerfile:1
+
+# Build stage
 FROM golang:1.25.0-alpine AS builder
 
-# 设置工作目录
 WORKDIR /app
 
-# 安装依赖
 RUN apk add --no-cache git ca-certificates
 
-# 容器内默认 GOPROXY 为 proxy.golang.org，国内网络通常不可达，
-# 显式设置为本机一致的国内镜像，避免 go mod download 失败。
 ENV GOPROXY=https://goproxy.cn,https://goproxy.io,direct
 ENV GOSUMDB=off
 
-# 复制 go mod 文件
 COPY go.mod go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 
-# 复制源代码
 COPY . .
 
-# 版本号（docker build --build-arg GIT_VERSION=xxx 注入，默认 dev）
 ARG GIT_VERSION=dev
 
-# 编译
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo \
+ARG APP_NAME=user-service
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo \
     -ldflags "-X main.Version=${GIT_VERSION}" \
-    -o user-service ./cmd/server
+    -o /app/${APP_NAME} ./cmd/server
 
-# 运行阶段
+# Final stage
 FROM alpine:latest
+
+ENV APP_NAME=user-service
 
 RUN apk --no-cache add ca-certificates tzdata
 
 WORKDIR /app
 
-# 从构建阶段复制二进制文件
-COPY --from=builder /app/user-service .
+COPY --from=builder /app/${APP_NAME} .
 COPY --from=builder /app/config/ ./config/
 
-# 创建非 root 用户
 RUN adduser -D -g '' appuser
 USER appuser
 
-# 暴露端口 (gRPC=9090, metrics=9091)
-EXPOSE 9090 9091
+EXPOSE 8081 9001 9091
 
-# 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8081/health || exit 1
 
-# 启动命令
-CMD ["./user-service"]
+CMD exec ./${APP_NAME}
