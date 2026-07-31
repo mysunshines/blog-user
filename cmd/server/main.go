@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/mysunshines/blog-user/internal/config"
-	"github.com/mysunshines/blog-user/internal/handler"
+	v1 "github.com/mysunshines/blog-user/internal/handler/v1"
 	"github.com/mysunshines/blog-user/internal/model"
 	"github.com/mysunshines/blog-user/internal/repository"
 	"github.com/mysunshines/blog-user/internal/service"
@@ -45,7 +45,7 @@ type Server struct {
 	userRepo      repository.UserRepository
 	tokenRepo     repository.TokenRepository
 	blacklistRepo repository.BlacklistRepository
-	userHandl     *handler.UserHandler
+	userHandl     *v1.UserHandler
 	db            *gorm.DB
 	cb            *gobreaker.CircuitBreaker
 }
@@ -90,7 +90,7 @@ func NewServer(cfg *config.Config) *Server {
 	userSvc := service.NewUserService(userRepo, cfg)
 
 	// 初始化处理器
-	userHandl := handler.NewUserHandler(userSvc)
+	userHandl := v1.NewUserHandler(userSvc)
 
 	return &Server{
 		cfg:           cfg,
@@ -323,11 +323,11 @@ func (s *Server) runGRPCServer() {
 			MinTime:             5 * time.Minute,
 			PermitWithoutStream: true,
 		}),
-		grpc.ChainUnaryInterceptor(s.grpcUnaryInterceptor, commonmiddleware.GRPCAuthInterceptor()),
+		grpc.ChainUnaryInterceptor(s.grpcUnaryInterceptor, commonmiddleware.GRPCAuthInterceptor(), commonmiddleware.GRPCMetricsInterceptor(constants.ServiceNameUser), commonmiddleware.GRPCLoggingInterceptor()),
 	}
 
 	s.grpcServer = grpc.NewServer(grpcOpts...)
-	user.RegisterUserServiceServer(s.grpcServer, &handler.GrpcUserHandler{
+	user.RegisterUserServiceServer(s.grpcServer, &v1.GrpcUserHandler{
 		Svc: s.userSvc,
 		Cb:  s.cb,
 	})

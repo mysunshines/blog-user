@@ -46,6 +46,9 @@ const (
 	ErrDeleteFailed   = 20013 // 删除失败
 	ErrLoginFailed    = 20014 // 登录失败
 	ErrRegisterFailed = 20015 // 注册失败
+
+	// 请求频率限制
+	ErrTooManyRequests = 20016 // 请求太频繁
 )
 
 // AppError 是 Error 的别名，保持向后兼容

@@ -47,3 +47,11 @@ metrics:
 bloom:
   enabled: true
   size: 1000000
+
+mail:
+  smtp_host: "smtp.example.com"
+  smtp_port: 587
+  smtp_username: ""
+  smtp_password: ""
+  from_address: "noreply@blog.local"
+  use_tls: true

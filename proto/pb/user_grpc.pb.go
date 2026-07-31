@@ -2,13 +2,12 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v6.33.4
-// source: user.proto
+// source: proto/user.proto
 
 package pb
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -20,18 +19,18 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserService_Register_FullMethodName            = "/user.UserService/Register"
-	UserService_Login_FullMethodName               = "/user.UserService/Login"
-	UserService_Logout_FullMethodName              = "/user.UserService/Logout"
-	UserService_GetUser_FullMethodName             = "/user.UserService/GetUser"
-	UserService_ValidateToken_FullMethodName       = "/user.UserService/ValidateToken"
-	UserService_UpdateUser_FullMethodName          = "/user.UserService/UpdateUser"
-	UserService_DeleteUser_FullMethodName          = "/user.UserService/DeleteUser"
-	UserService_GetUsers_FullMethodName            = "/user.UserService/GetUsers"
-	UserService_ChangePassword_FullMethodName      = "/user.UserService/ChangePassword"
-	UserService_AddToBlacklist_FullMethodName      = "/user.UserService/AddToBlacklist"
-	UserService_RemoveFromBlacklist_FullMethodName = "/user.UserService/RemoveFromBlacklist"
-	UserService_IsInBlacklist_FullMethodName       = "/user.UserService/IsInBlacklist"
+	UserService_Register_FullMethodName            = "/user.v1.UserService/Register"
+	UserService_Login_FullMethodName               = "/user.v1.UserService/Login"
+	UserService_Logout_FullMethodName              = "/user.v1.UserService/Logout"
+	UserService_GetUser_FullMethodName             = "/user.v1.UserService/GetUser"
+	UserService_ValidateToken_FullMethodName       = "/user.v1.UserService/ValidateToken"
+	UserService_UpdateUser_FullMethodName          = "/user.v1.UserService/UpdateUser"
+	UserService_DeleteUser_FullMethodName          = "/user.v1.UserService/DeleteUser"
+	UserService_GetUsers_FullMethodName            = "/user.v1.UserService/GetUsers"
+	UserService_ChangePassword_FullMethodName      = "/user.v1.UserService/ChangePassword"
+	UserService_AddToBlacklist_FullMethodName      = "/user.v1.UserService/AddToBlacklist"
+	UserService_RemoveFromBlacklist_FullMethodName = "/user.v1.UserService/RemoveFromBlacklist"
+	UserService_IsInBlacklist_FullMethodName       = "/user.v1.UserService/IsInBlacklist"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -483,7 +482,7 @@ func _UserService_IsInBlacklist_Handler(srv interface{}, ctx context.Context, de
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var UserService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "user.UserService",
+	ServiceName: "user.v1.UserService",
 	HandlerType: (*UserServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -536,5 +535,5 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "user.proto",
+	Metadata: "proto/user.proto",
 }

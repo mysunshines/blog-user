@@ -1,4 +1,6 @@
-package handler
+// Package v1 存放 user-service 的 HTTP API 处理器（v1 版本）。
+// 后续迭代 v2 接口时，新增 internal/handler/v2 包即可，互不干扰。
+package v1
 
 import (
 	"strconv"
@@ -27,7 +29,7 @@ func NewUserHandler(svc service.UserService) *UserHandler {
 // @Accept json
 // @Produce json
 // @Param user body model.RegisterRequest true "注册信息"
-// @Success 200 {object} response.LoginResponse
+// @Success 200 {object} response.Response
 // @Router /api/v1/user/register [post]
 func (h *UserHandler) Register(c *gin.Context) {
 	var req model.RegisterRequest
@@ -42,7 +44,30 @@ func (h *UserHandler) Register(c *gin.Context) {
 		return
 	}
 
-	response.SuccessLogin(c, result.Token, result.User)
+	response.SuccessLogin(c, result.Token, result.User, result.CSRFToken)
+}
+
+// SendVerificationCode 发送邮箱验证码
+// @Summary 发送邮箱验证码
+// @Tags user
+// @Accept json
+// @Produce json
+// @Param email body model.SendVerifyCodeRequest true "邮箱"
+// @Success 200 {object} response.Response
+// @Router /api/v1/user/send-code [post]
+func (h *UserHandler) SendVerificationCode(c *gin.Context) {
+	var req model.SendVerifyCodeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "参数错误: "+err.Error())
+		return
+	}
+
+	if err := h.svc.SendVerificationCode(c.Request.Context(), &req); err != nil {
+		response.Fail(c, err)
+		return
+	}
+
+	response.SuccessWithMessage(c, "验证码已发送至邮箱", nil)
 }
 
 // Login 用户登录
@@ -51,7 +76,7 @@ func (h *UserHandler) Register(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param user body model.LoginRequest true "登录信息"
-// @Success 200 {object} response.LoginResponse
+// @Success 200 {object} response.Response
 // @Router /api/v1/user/login [post]
 func (h *UserHandler) Login(c *gin.Context) {
 	var req model.LoginRequest
@@ -66,7 +91,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
-	response.SuccessLogin(c, result.Token, result.User)
+	response.SuccessLogin(c, result.Token, result.User, result.CSRFToken)
 }
 
 // Logout 用户登出
@@ -231,7 +256,7 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param token body model.ValidateTokenRequest true "token"
-// @Success 200 {object} response.TokenResponse
+// @Success 200 {object} response.Response
 // @Router /api/v1/user/validate [post]
 func (h *UserHandler) ValidateToken(c *gin.Context) {
 	var req model.ValidateTokenRequest

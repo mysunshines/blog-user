@@ -3,7 +3,10 @@ package service
 import (
 	"context"
 	stderrors "errors"
+	"fmt"
+	"math/rand"
 	"time"
+	"unicode"
 
 	"github.com/mysunshines/blog-user/internal/config"
 	"github.com/mysunshines/blog-user/internal/model"
@@ -11,7 +14,10 @@ import (
 	apperrors "github.com/mysunshines/blog-user/pkg/errors"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/mysunshines/gocommon/cache"
 	"github.com/mysunshines/gocommon/log"
+	"github.com/mysunshines/gocommon/notify"
+	"github.com/mysunshines/gocommon/util"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -19,6 +25,7 @@ import (
 type UserService interface {
 	// 认证相关
 	Register(ctx context.Context, req *model.RegisterRequest) (*model.AuthResponse, error)
+	SendVerificationCode(ctx context.Context, req *model.SendVerifyCodeRequest) error
 	Login(ctx context.Context, req *model.LoginRequest) (*model.AuthResponse, error)
 	Logout(ctx context.Context, req *model.LogoutRequest) error
 	ValidateToken(ctx context.Context, token string) (*ValidateTokenResult, error)
@@ -81,18 +88,38 @@ func NewUserService(repo repository.UserRepository, cfg *config.Config) UserServ
 	}
 }
 
+// verifyCodeKeyPrefix Redis 验证码 key 前缀
+const verifyCodeKeyPrefix = "verify_code:"
+
+// verifyCodeTTL 验证码有效期
+const verifyCodeTTL = 5 * time.Minute
+
 // Register 用户注册
 func (s *userService) Register(ctx context.Context, req *model.RegisterRequest) (*model.AuthResponse, error) {
 	// 检查用户名和邮箱格式
 	if !isValidUsername(req.Username) {
-		return nil, apperrors.New(apperrors.ErrUnauthorized, "Invalid username format")
+		return nil, apperrors.New(apperrors.ErrUnauthorized, "用户名格式不正确，支持中英文、数字、下划线，2-32个字符")
 	}
 	if !isValidEmail(req.Email) {
-		return nil, apperrors.New(apperrors.ErrUnauthorized, "Invalid email format")
+		return nil, apperrors.New(apperrors.ErrUnauthorized, "邮箱格式不正确")
 	}
 	if !isValidPassword(req.Password) {
-		return nil, apperrors.New(apperrors.ErrUnauthorized, "Password must contain letters and numbers, 6-32 characters")
+		return nil, apperrors.New(apperrors.ErrUnauthorized, "密码需包含字母和数字，6-32个字符")
 	}
+
+	// 验证验证码
+	if req.VerifyCode == "" {
+		return nil, apperrors.New(apperrors.ErrUnauthorized, "请输入邮箱验证码")
+	}
+	storedCode, err := cache.Get(ctx, verifyCodeKeyPrefix+req.Email)
+	if err != nil || storedCode == "" {
+		return nil, apperrors.New(apperrors.ErrUnauthorized, "验证码已过期，请重新获取")
+	}
+	if storedCode != req.VerifyCode {
+		return nil, apperrors.New(apperrors.ErrUnauthorized, "验证码不正确")
+	}
+	// 验证通过后删除验证码
+	_ = cache.Delete(ctx, verifyCodeKeyPrefix+req.Email)
 
 	// 检查用户是否已存在
 	exists, err := s.repo.ExistsByUsernameOrEmail(ctx, req.Username, req.Email)
@@ -128,7 +155,7 @@ func (s *userService) Register(ctx context.Context, req *model.RegisterRequest) 
 	s.bf.Add(req.Username)
 
 	// 生成Token
-	token, err := s.generateToken(user)
+	token, csrfToken, err := s.generateToken(user)
 	if err != nil {
 		return nil, apperrors.New(apperrors.ErrRegisterFailed, "Failed to generate token")
 	}
@@ -139,9 +166,76 @@ func (s *userService) Register(ctx context.Context, req *model.RegisterRequest) 
 	}
 
 	return &model.AuthResponse{
-		Token: token,
-		User:  user.ToResponsePtr(),
+		Token:     token,
+		CSRFToken: csrfToken,
+		User:      user.ToResponsePtr(),
 	}, nil
+}
+
+// SendVerificationCode 发送邮箱验证码
+func (s *userService) SendVerificationCode(ctx context.Context, req *model.SendVerifyCodeRequest) error {
+	if !isValidEmail(req.Email) {
+		return apperrors.New(apperrors.ErrUnauthorized, "邮箱格式不正确")
+	}
+
+	// 检查邮箱是否已被注册
+	_, err := s.repo.GetByEmail(ctx, req.Email)
+	if err == nil {
+		return apperrors.New(apperrors.ErrUserAlreadyExists, "该邮箱已被注册")
+	}
+	if !stderrors.Is(err, repository.ErrNotFound) {
+		return apperrors.New(apperrors.ErrInternal, "服务器内部错误")
+	}
+
+	// 限制发送频率：60秒内只能发送一次
+	rateLimitKey := "verify_code_rate:" + req.Email
+	ok, setErr := cache.SetNX(ctx, rateLimitKey, "1", 60*time.Second)
+	if setErr == nil && !ok {
+		return apperrors.New(apperrors.ErrTooManyRequests, "验证码发送过于频繁，请60秒后再试")
+	}
+
+	// 生成6位随机验证码
+	code := fmt.Sprintf("%06d", rand.Intn(1000000))
+
+	// 存入Redis，5分钟过期
+	if err := cache.Set(ctx, verifyCodeKeyPrefix+req.Email, code, verifyCodeTTL); err != nil {
+		log.Errorf("Failed to store verify code for %s: %v", req.Email, err)
+		return apperrors.New(apperrors.ErrInternal, "验证码存储失败")
+	}
+
+	// 发送邮件
+	cfg := notify.Config{
+		Host:     s.cfg.Mail.SMTPHost,
+		Port:     s.cfg.Mail.SMTPPort,
+		Username: s.cfg.Mail.SMTPUsername,
+		Password: s.cfg.Mail.SMTPPassword,
+		From:     s.cfg.Mail.FromAddress,
+		FromName: "Blog 博客系统",
+	}
+	msg := notify.Message{
+		From:     s.cfg.Mail.FromAddress,
+		FromName: "Blog 博客系统",
+		To:       []string{req.Email},
+		Subject:  "博客系统 - 邮箱验证码",
+		HTMLBody: fmt.Sprintf(`
+		<div style="max-width:600px;margin:0 auto;padding:20px;font-family:Arial,sans-serif;">
+			<h2 style="color:#333;">邮箱验证码</h2>
+			<p>您的验证码是：</p>
+			<div style="font-size:28px;font-weight:bold;color:#1890ff;padding:12px 24px;background:#f0f5ff;display:inline-block;border-radius:4px;letter-spacing:4px;">%s</div>
+			<p style="color:#999;margin-top:20px;">验证码5分钟内有效，请勿泄露给他人。</p>
+			<p style="color:#999;">如果不是您本人操作，请忽略此邮件。</p>
+		</div>`, code),
+	}
+
+	if err := notify.Send(cfg, msg); err != nil {
+		log.Errorf("Failed to send verify code email to %s: %v", req.Email, err)
+		// 邮件发送失败时删除已存储的验证码
+		_ = cache.Delete(ctx, verifyCodeKeyPrefix+req.Email)
+		return apperrors.New(apperrors.ErrInternal, "邮件发送失败，请稍后重试")
+	}
+
+	log.Infof("Verification code sent to %s", req.Email)
+	return nil
 }
 
 // Login 用户登录
@@ -166,7 +260,7 @@ func (s *userService) Login(ctx context.Context, req *model.LoginRequest) (*mode
 	}
 
 	// 生成Token
-	token, err := s.generateToken(user)
+	token, csrfToken, err := s.generateToken(user)
 	if err != nil {
 		return nil, apperrors.New(apperrors.ErrLoginFailed, "Failed to generate token")
 	}
@@ -177,8 +271,9 @@ func (s *userService) Login(ctx context.Context, req *model.LoginRequest) (*mode
 	}
 
 	return &model.AuthResponse{
-		Token: token,
-		User:  user.ToResponsePtr(),
+		Token:     token,
+		CSRFToken: csrfToken,
+		User:      user.ToResponsePtr(),
 	}, nil
 }
 
@@ -390,18 +485,25 @@ func (s *userService) IsInBlacklist(ctx context.Context, userID, targetUserID ui
 	return inBlacklist, nil
 }
 
-// generateToken 生成JWT Token
-func (s *userService) generateToken(user *model.User) (string, error) {
+// generateToken 生成JWT Token，并返回随 JWT 下发的 CSRF token。
+// csrf 声明写入 JWT，前端在已登录的状态变更请求中通过 X-CSRF-Token 头回传，由 CSRFMiddleware 校验。
+func (s *userService) generateToken(user *model.User) (string, string, error) {
+	csrfToken := util.GenerateRandomString(32)
 	claims := jwt.MapClaims{
 		"user_id":  user.ID,
 		"username": user.Username,
 		"role":     user.Role,
+		"csrf":     csrfToken,
 		"exp":      time.Now().Add(time.Duration(s.cfg.JWT.ExpireTime) * time.Second).Unix(),
 		"iat":      time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(s.cfg.JWT.Secret))
+	signed, err := token.SignedString([]byte(s.cfg.JWT.Secret))
+	if err != nil {
+		return "", "", err
+	}
+	return signed, csrfToken, nil
 }
 
 // saveToken 保存Token
@@ -416,15 +518,18 @@ func (s *userService) saveToken(ctx context.Context, userID uint, token string) 
 
 // ============ 辅助函数 ============
 
-// isValidUsername 验证用户名
+// isValidUsername 验证用户名，支持中文、英文、数字、下划线
 func isValidUsername(username string) bool {
-	if len(username) < 3 || len(username) > 64 {
+	// 对中文字符按 rune 计长，对 ASCII 按实际字节，确保两者计长一致
+	runeLen := len([]rune(username))
+	if runeLen < 2 || runeLen > 32 {
 		return false
 	}
-	for _, c := range username {
-		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
-			return false
+	for _, r := range username {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' {
+			continue
 		}
+		return false
 	}
 	return true
 }

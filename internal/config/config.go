@@ -22,6 +22,16 @@ type (
 	RateLimitConfig = commonconfig.RateLimitConfig
 )
 
+// MailConfig 邮件配置
+type MailConfig struct {
+	SMTPHost     string `yaml:"smtp_host"`
+	SMTPPort     int    `yaml:"smtp_port"`
+	SMTPUsername string `yaml:"smtp_username"`
+	SMTPPassword string `yaml:"smtp_password"`
+	FromAddress  string `yaml:"from_address"`
+	UseTLS       bool   `yaml:"use_tls"`
+}
+
 // Config 用户服务配置
 type Config struct {
 	App       AppConfig       `yaml:"app"`
@@ -33,6 +43,7 @@ type Config struct {
 	Consul    ConsulConfig    `yaml:"consul"`
 	Metrics   MetricsConfig   `yaml:"metrics"`
 	RateLimit RateLimitConfig `yaml:"rate_limit"`
+	Mail      MailConfig      `yaml:"mail"`
 }
 
 var globalConfig *Config
@@ -112,6 +123,12 @@ func setDefaults(c *Config) {
 	if c.RateLimit.Burst == 0 {
 		c.RateLimit.Burst = 200
 	}
+	if c.Mail.SMTPPort == 0 {
+		c.Mail.SMTPPort = 587
+	}
+	if c.Mail.FromAddress == "" {
+		c.Mail.FromAddress = "noreply@blog.local"
+	}
 }
 
 func applyEnvOverrides(c *Config) {
@@ -140,6 +157,9 @@ func applyEnvOverrides(c *Config) {
 			c.Redis.Port = port
 		}
 	}
+	if v := os.Getenv("REDIS_PASSWORD"); v != "" {
+		c.Redis.Password = v
+	}
 	if v := os.Getenv("CONSUL_ADDRESS"); v != "" {
 		c.Consul.Address = v
 	}
@@ -147,5 +167,22 @@ func applyEnvOverrides(c *Config) {
 		if port, err := strconv.Atoi(v); err == nil {
 			c.GRPC.Port = port
 		}
+	}
+	if v := os.Getenv("SMTP_HOST"); v != "" {
+		c.Mail.SMTPHost = v
+	}
+	if v := os.Getenv("SMTP_PORT"); v != "" {
+		if port, err := strconv.Atoi(v); err == nil {
+			c.Mail.SMTPPort = port
+		}
+	}
+	if v := os.Getenv("SMTP_USERNAME"); v != "" {
+		c.Mail.SMTPUsername = v
+	}
+	if v := os.Getenv("SMTP_PASSWORD"); v != "" {
+		c.Mail.SMTPPassword = v
+	}
+	if v := os.Getenv("SMTP_FROM"); v != "" {
+		c.Mail.FromAddress = v
 	}
 }

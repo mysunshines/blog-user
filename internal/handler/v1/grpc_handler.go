@@ -1,4 +1,4 @@
-package handler
+package v1
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	user "github.com/mysunshines/blog-user/proto/pb"
 
 	"github.com/mysunshines/gocommon/constants"
-	"github.com/mysunshines/gocommon/middleware"
+	commonmiddleware "github.com/mysunshines/gocommon/middleware"
 
 	"github.com/sony/gobreaker"
 )
@@ -116,7 +116,7 @@ func (h *GrpcUserHandler) ValidateToken(ctx context.Context, req *user.ValidateT
 }
 
 func (h *GrpcUserHandler) UpdateUser(ctx context.Context, req *user.UpdateUserRequest) (*user.UpdateUserResponse, error) {
-	uid, err := middleware.RequireGRPCAuth(ctx)
+	uid, err := commonmiddleware.RequireGRPCAuth(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (h *GrpcUserHandler) UpdateUser(ctx context.Context, req *user.UpdateUserRe
 }
 
 func (h *GrpcUserHandler) DeleteUser(ctx context.Context, req *user.DeleteUserRequest) (*user.DeleteUserResponse, error) {
-	if _, err := middleware.RequireGRPCAuth(ctx); err != nil {
+	if _, err := commonmiddleware.RequireGRPCAuth(ctx); err != nil {
 		return nil, err
 	}
 	err := h.Svc.DeleteUser(ctx, uint(req.UserId))
@@ -194,7 +194,7 @@ func (h *GrpcUserHandler) GetUsers(ctx context.Context, req *user.GetUsersReques
 }
 
 func (h *GrpcUserHandler) ChangePassword(ctx context.Context, req *user.ChangePasswordRequest) (*user.ChangePasswordResponse, error) {
-	uid, err := middleware.RequireGRPCAuth(ctx)
+	uid, err := commonmiddleware.RequireGRPCAuth(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +217,7 @@ func (h *GrpcUserHandler) ChangePassword(ctx context.Context, req *user.ChangePa
 }
 
 func (h *GrpcUserHandler) AddToBlacklist(ctx context.Context, req *user.BlacklistRequest) (*user.BlacklistResponse, error) {
-	uid, err := middleware.RequireGRPCAuth(ctx)
+	uid, err := commonmiddleware.RequireGRPCAuth(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +240,7 @@ func (h *GrpcUserHandler) AddToBlacklist(ctx context.Context, req *user.Blacklis
 }
 
 func (h *GrpcUserHandler) RemoveFromBlacklist(ctx context.Context, req *user.BlacklistRequest) (*user.BlacklistResponse, error) {
-	uid, err := middleware.RequireGRPCAuth(ctx)
+	uid, err := commonmiddleware.RequireGRPCAuth(ctx)
 	if err != nil {
 		return nil, err
 	}

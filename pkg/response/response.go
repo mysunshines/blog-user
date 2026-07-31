@@ -117,21 +117,17 @@ func Fail(c *gin.Context, err error) {
 	})
 }
 
-// LoginResponse 登录响应
-type LoginResponse struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Token   string      `json:"token"`
-	User    interface{} `json:"user"`
-}
-
-// SuccessLogin 登录成功响应
-func SuccessLogin(c *gin.Context, token string, user interface{}) {
-	c.JSON(http.StatusOK, LoginResponse{
+// SuccessLogin 登录成功响应（统一使用 data 包裹结构，与 Success/SuccessWithMessage 保持一致）。
+// 随响应下发 csrf_token，前端需在非安全方法的已登录请求中原样通过 X-CSRF-Token 头回传。
+func SuccessLogin(c *gin.Context, token string, user interface{}, csrfToken string) {
+	c.JSON(http.StatusOK, Response{
 		Code:    0,
 		Message: "success",
-		Token:   token,
-		User:    user,
+		Data: gin.H{
+			"token":      token,
+			"user":       user,
+			"csrf_token": csrfToken,
+		},
 	})
 }
 
@@ -144,20 +140,15 @@ func SuccessWithMessage(c *gin.Context, message string, data interface{}) {
 	})
 }
 
-// TokenResponse Token验证响应
-type TokenResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Valid   bool   `json:"valid"`
-	UserID  uint   `json:"user_id"`
-}
-
-// SuccessToken Token验证成功响应
+// SuccessToken Token验证成功响应（统一使用 data 包裹结构，与 Success/SuccessWithMessage 保持一致）
 func SuccessToken(c *gin.Context, valid bool, userID uint, username string) {
-	c.JSON(http.StatusOK, TokenResponse{
+	c.JSON(http.StatusOK, Response{
 		Code:    0,
 		Message: "success",
-		Valid:   valid,
-		UserID:  userID,
+		Data: gin.H{
+			"valid":    valid,
+			"user_id":  userID,
+			"username": username,
+		},
 	})
 }
