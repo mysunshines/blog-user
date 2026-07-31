@@ -285,9 +285,13 @@ service UserService {
             ┌─────────────┐
             │  Response:  │
             │  {user,    │
+            │   token,   │
+            │   csrf_   │
             │   token}   │
             └─────────────┘
 ```
+
+> **注意**：`RegisterResponse` 和 `LoginResponse` 均包含 `csrf_token` 字段（`user.proto` 字段 5），客户端需将其存入 `localStorage.csrf_token`，后续写请求需携带 `X-CSRF-Token` 请求头。
 
 ### 5.2 用户登录流程
 
@@ -309,7 +313,17 @@ service UserService {
                    ┌─────────────┐     ┌──────────────┐     ┌───────────────┐
                    │   Save      │────▶│   Add to     │────▶│   Return      │
                    │   Token     │     │   BloomFilter│     │   Success     │
-                   └─────────────┘     └──────────────┘     └───────────────┘
+                   └─────────────┘     └──────────────┘     └───────┬───────┘
+                                                                    │
+                        ┌───────────────────────────────────────────┘
+                        ▼
+                 ┌─────────────┐
+                 │  Response:  │
+                 │  {user,    │
+                 │   token,   │
+                 │   csrf_   │
+                 │   token}   │
+                 └─────────────┘
 ```
 
 ## 六、Prometheus Metrics

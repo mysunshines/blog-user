@@ -292,6 +292,15 @@ func (s *Server) runHTTPServer() {
 
 		// 用户列表（需要认证）
 		api.GET("/users", commonmiddleware.JWTValidMiddleware(), commonmiddleware.ContextMiddleware(), s.userHandl.GetUsers)
+
+		// 管理员接口（需要认证 + 管理员角色）
+		adminGroup := api.Group("/admin/users")
+		adminGroup.Use(commonmiddleware.JWTValidMiddleware(), commonmiddleware.ContextMiddleware(), commonmiddleware.AdminOnlyMiddleware())
+		{
+			adminGroup.GET("", s.userHandl.AdminGetUsers)
+			adminGroup.PUT("/:id", s.userHandl.AdminUpdateUser)
+			adminGroup.DELETE("/:id", s.userHandl.DeleteUser)
+		}
 	}
 
 	addr := s.cfg.HTTP.Addr()

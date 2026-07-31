@@ -351,6 +351,50 @@ func (h *UserHandler) IsInBlacklist(c *gin.Context) {
 	response.Success(c, gin.H{"in_blacklist": inBlacklist})
 }
 
+// AdminGetUsers 管理员获取用户列表（支持按状态筛选）
+func (h *UserHandler) AdminGetUsers(c *gin.Context) {
+	var req model.GetUsersRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		response.BadRequest(c, "参数错误: "+err.Error())
+		return
+	}
+
+	users, total, err := h.svc.GetUsers(c.Request.Context(), &req)
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+
+	response.PageSuccess(c, users, total, int(req.Page), int(req.PageSize))
+}
+
+// AdminUpdateUser 管理员更新用户
+func (h *UserHandler) AdminUpdateUser(c *gin.Context) {
+	var req model.AdminUpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "参数错误: "+err.Error())
+		return
+	}
+
+	idStr := c.Param("id")
+	if idStr != "" {
+		id, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			response.BadRequest(c, "无效的用户ID")
+			return
+		}
+		req.UserID = uint(id)
+	}
+
+	user, err := h.svc.AdminUpdateUser(c.Request.Context(), &req)
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+
+	response.Success(c, user)
+}
+
 // 辅助函数
 func extractToken(c *gin.Context) string {
 	authHeader := c.GetHeader("Authorization")

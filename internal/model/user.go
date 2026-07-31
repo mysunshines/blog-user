@@ -115,6 +115,16 @@ type GetUsersRequest struct {
 	Page     int   `form:"page,default=1" binding:"min=1"`
 	PageSize int   `form:"page_size,default=20" binding:"min=1,max=100"`
 	Role     uint8 `form:"role"`
+	Status   *uint8 `form:"status"`
+}
+
+// AdminUpdateUserRequest 管理员更新用户请求
+// user_id 从 URL 参数绑定，不在 JSON body 中强制要求
+type AdminUpdateUserRequest struct {
+	UserID   uint   `json:"user_id"`
+	Nickname string `json:"nickname"`
+	Role     *uint8  `json:"role"`
+	Status   *uint8  `json:"status"`
 }
 
 // ChangePasswordRequest 修改密码请求

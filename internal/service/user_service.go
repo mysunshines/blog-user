@@ -37,6 +37,9 @@ type UserService interface {
 	GetUsers(ctx context.Context, req *model.GetUsersRequest) ([]*model.UserResponse, int64, error)
 	ChangePassword(ctx context.Context, req *model.ChangePasswordRequest) error
 
+	// 管理员操作
+	AdminUpdateUser(ctx context.Context, req *model.AdminUpdateUserRequest) (*model.UserResponse, error)
+
 	// 黑名单操作
 	AddToBlacklist(ctx context.Context, req *model.BlacklistRequest) error
 	RemoveFromBlacklist(ctx context.Context, req *model.BlacklistRequest) error
@@ -410,7 +413,7 @@ func (s *userService) GetUsers(ctx context.Context, req *model.GetUsersRequest) 
 		pageSize = 20
 	}
 
-	users, total, err := s.repo.List(ctx, page, pageSize, req.Role)
+	users, total, err := s.repo.List(ctx, page, pageSize, req.Role, req.Status)
 	if err != nil {
 		return nil, 0, apperrors.New(apperrors.ErrInternal, "Failed to list users")
 	}
@@ -483,6 +486,33 @@ func (s *userService) IsInBlacklist(ctx context.Context, userID, targetUserID ui
 		return false, apperrors.New(apperrors.ErrInternal, "Failed to check blacklist")
 	}
 	return inBlacklist, nil
+}
+
+// AdminUpdateUser 管理员更新用户信息（可修改角色、状态等）
+func (s *userService) AdminUpdateUser(ctx context.Context, req *model.AdminUpdateUserRequest) (*model.UserResponse, error) {
+	user, err := s.repo.GetByID(ctx, req.UserID)
+	if err != nil {
+		if stderrors.Is(err, repository.ErrNotFound) {
+			return nil, apperrors.New(apperrors.ErrUserNotFound, "User not found")
+		}
+		return nil, apperrors.New(apperrors.ErrInternal, "Failed to get user")
+	}
+
+	if req.Nickname != "" {
+		user.Nickname = req.Nickname
+	}
+	if req.Role != nil {
+		user.Role = *req.Role
+	}
+	if req.Status != nil {
+		user.Status = *req.Status
+	}
+
+	if err := s.repo.Update(ctx, user); err != nil {
+		return nil, apperrors.New(apperrors.ErrUpdateFailed, "Failed to update user")
+	}
+
+	return user.ToResponsePtr(), nil
 }
 
 // generateToken 生成JWT Token，并返回随 JWT 下发的 CSRF token。

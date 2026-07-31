@@ -35,10 +35,11 @@ func (h *GrpcUserHandler) Register(ctx context.Context, req *user.RegisterReques
 	}
 
 	return &user.RegisterResponse{
-		Code:    uint32(user.UserErrorCode_USER_SUCCESS),
-		Message: "success",
-		User:    ConvertToProtoUser(result.User),
-		Token:   result.Token,
+		Code:      uint32(user.UserErrorCode_USER_SUCCESS),
+		Message:   "success",
+		User:      ConvertToProtoUser(result.User),
+		Token:     result.Token,
+		CsrfToken: result.CSRFToken,
 	}, nil
 }
 
@@ -55,10 +56,11 @@ func (h *GrpcUserHandler) Login(ctx context.Context, req *user.LoginRequest) (*u
 	}
 
 	return &user.LoginResponse{
-		Code:    uint32(user.UserErrorCode_USER_SUCCESS),
-		Message: "success",
-		User:    ConvertToProtoUser(result.User),
-		Token:   result.Token,
+		Code:      uint32(user.UserErrorCode_USER_SUCCESS),
+		Message:   "success",
+		User:      ConvertToProtoUser(result.User),
+		Token:     result.Token,
+		CsrfToken: result.CSRFToken,
 	}, nil
 }
 

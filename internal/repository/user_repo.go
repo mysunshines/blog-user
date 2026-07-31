@@ -26,7 +26,7 @@ type UserRepository interface {
 
 	// 用户查询
 	GetByUsernameOrEmail(ctx context.Context, username, email string) (*model.User, error)
-	List(ctx context.Context, page, pageSize int, role uint8) ([]*model.User, int64, error)
+	List(ctx context.Context, page, pageSize int, role uint8, status *uint8) ([]*model.User, int64, error)
 	ExistsByUsernameOrEmail(ctx context.Context, username, email string) (bool, error)
 
 	// Token操作
@@ -118,13 +118,16 @@ func (r *userRepository) GetByUsernameOrEmail(ctx context.Context, username, ema
 }
 
 // List 获取用户列表
-func (r *userRepository) List(ctx context.Context, page, pageSize int, role uint8) ([]*model.User, int64, error) {
+func (r *userRepository) List(ctx context.Context, page, pageSize int, role uint8, status *uint8) ([]*model.User, int64, error) {
 	var users []*model.User
 	var total int64
 
 	baseQuery := r.db.WithContext(ctx).Model(&model.User{})
 	if role > 0 {
 		baseQuery = baseQuery.Where("role = ?", role)
+	}
+	if status != nil {
+		baseQuery = baseQuery.Where("status = ?", *status)
 	}
 
 	offset := (page - 1) * pageSize
