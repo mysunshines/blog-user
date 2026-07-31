@@ -139,9 +139,16 @@ func (s *Server) Run() error {
 
 // loadConfig 解析配置路径并加载配置，加载失败时直接终止进程。
 func loadConfig() *config.Config {
-	configPath := os.Getenv(constants.EnvConfigPath)
+	// 按 APP_ENV 自动选择配置：test → config_test.yaml  production → config_production.yaml
+	// 显式 CONFIG_PATH 优先，未设 APP_ENV 则默认 config.yaml
+	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
-		configPath = constants.DefaultConfigPath
+		env := os.Getenv("APP_ENV")
+		if env != "" && env != "development" {
+			configPath = fmt.Sprintf("config/config_%s.yaml", env)
+		} else {
+			configPath = "config/config.yaml"
+		}
 	}
 	cfg, err := config.Load(configPath)
 	if err != nil {

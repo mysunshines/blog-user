@@ -1,0 +1,28 @@
+server:
+  name: "user-service"
+  port: 50053
+  log_level: "info"
+
+consul:
+  address: "consul:8500"
+  scheme: "http"
+
+mysql:
+  host: "mysql"
+  port: 3306
+  user: "root"
+  password: "root123"
+  database: "blog"
+
+redis:
+  addr: "redis:6379"
+  password: ""
+  db: 0
+
+tracing:
+  enabled: true
+  jaeger_endpoint: "http://jaeger:14268/api/traces"
+
+jwt:
+  secret: "production-secret-change-me"
+  expire_hours: 24
