@@ -125,6 +125,10 @@ const (
 	AuditAction_AUDIT_ACTION_ARTICLE_REJECT       AuditAction = 26 // 审核拒绝
 	AuditAction_AUDIT_ACTION_ARTICLE_SUBMIT       AuditAction = 27 // 提交审核
 	AuditAction_AUDIT_ACTION_ARTICLE_SET_CATEGORY AuditAction = 28 // 设置文章分类
+	// 分类域
+	AuditAction_AUDIT_ACTION_CATEGORY_CREATE AuditAction = 30 // 创建分类
+	AuditAction_AUDIT_ACTION_CATEGORY_UPDATE AuditAction = 31 // 更新分类
+	AuditAction_AUDIT_ACTION_CATEGORY_DELETE AuditAction = 32 // 删除分类
 )
 
 // Enum value maps for AuditAction.
@@ -152,6 +156,9 @@ var (
 		26: "AUDIT_ACTION_ARTICLE_REJECT",
 		27: "AUDIT_ACTION_ARTICLE_SUBMIT",
 		28: "AUDIT_ACTION_ARTICLE_SET_CATEGORY",
+		30: "AUDIT_ACTION_CATEGORY_CREATE",
+		31: "AUDIT_ACTION_CATEGORY_UPDATE",
+		32: "AUDIT_ACTION_CATEGORY_DELETE",
 	}
 	AuditAction_value = map[string]int32{
 		"AUDIT_ACTION_UNSPECIFIED":          0,
@@ -176,6 +183,9 @@ var (
 		"AUDIT_ACTION_ARTICLE_REJECT":       26,
 		"AUDIT_ACTION_ARTICLE_SUBMIT":       27,
 		"AUDIT_ACTION_ARTICLE_SET_CATEGORY": 28,
+		"AUDIT_ACTION_CATEGORY_CREATE":      30,
+		"AUDIT_ACTION_CATEGORY_UPDATE":      31,
+		"AUDIT_ACTION_CATEGORY_DELETE":      32,
 	}
 )
 
@@ -2208,7 +2218,7 @@ const file_user_proto_rawDesc = "" +
 	"\x12USER_UPDATE_FAILED\x10\xac\x9c\x01\x12\x18\n" +
 	"\x12USER_DELETE_FAILED\x10\xad\x9c\x01\x12\x17\n" +
 	"\x11USER_LOGIN_FAILED\x10\xae\x9c\x01\x12\x1a\n" +
-	"\x14USER_REGISTER_FAILED\x10\xaf\x9c\x01*\xd6\x05\n" +
+	"\x14USER_REGISTER_FAILED\x10\xaf\x9c\x01*\xbc\x06\n" +
 	"\vAuditAction\x12\x1c\n" +
 	"\x18AUDIT_ACTION_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18AUDIT_ACTION_UPDATE_USER\x10\x01\x12\x1c\n" +
@@ -2232,7 +2242,10 @@ const file_user_proto_rawDesc = "" +
 	"\x1cAUDIT_ACTION_ARTICLE_APPROVE\x10\x19\x12\x1f\n" +
 	"\x1bAUDIT_ACTION_ARTICLE_REJECT\x10\x1a\x12\x1f\n" +
 	"\x1bAUDIT_ACTION_ARTICLE_SUBMIT\x10\x1b\x12%\n" +
-	"!AUDIT_ACTION_ARTICLE_SET_CATEGORY\x10\x1c2\xd4\x06\n" +
+	"!AUDIT_ACTION_ARTICLE_SET_CATEGORY\x10\x1c\x12 \n" +
+	"\x1cAUDIT_ACTION_CATEGORY_CREATE\x10\x1e\x12 \n" +
+	"\x1cAUDIT_ACTION_CATEGORY_UPDATE\x10\x1f\x12 \n" +
+	"\x1cAUDIT_ACTION_CATEGORY_DELETE\x10 2\xd4\x06\n" +
 	"\vUserService\x12?\n" +
 	"\bRegister\x12\x18.user.v1.RegisterRequest\x1a\x19.user.v1.RegisterResponse\x126\n" +
 	"\x05Login\x12\x15.user.v1.LoginRequest\x1a\x16.user.v1.LoginResponse\x129\n" +

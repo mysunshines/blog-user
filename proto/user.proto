@@ -207,6 +207,10 @@ enum AuditAction {
     AUDIT_ACTION_ARTICLE_REJECT = 26;  // 审核拒绝
     AUDIT_ACTION_ARTICLE_SUBMIT = 27;  // 提交审核
     AUDIT_ACTION_ARTICLE_SET_CATEGORY = 28; // 设置文章分类
+    // 分类域
+    AUDIT_ACTION_CATEGORY_CREATE = 30; // 创建分类
+    AUDIT_ACTION_CATEGORY_UPDATE = 31; // 更新分类
+    AUDIT_ACTION_CATEGORY_DELETE = 32; // 删除分类
 }
 
 message OperationLog {
