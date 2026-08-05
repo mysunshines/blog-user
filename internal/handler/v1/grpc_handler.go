@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 
+	"github.com/mysunshines/blog-user/internal/audit"
 	"github.com/mysunshines/blog-user/internal/model"
 	"github.com/mysunshines/blog-user/internal/service"
 	user "github.com/mysunshines/blog-user/proto/pb"
@@ -11,13 +12,17 @@ import (
 	commonmiddleware "github.com/mysunshines/gocommon/middleware"
 
 	"github.com/sony/gobreaker"
+	"gorm.io/gorm"
 )
 
-// GrpcUserHandler gRPC 用户处理器
+// GrpcUserHandler gRPC 用户处理器，同时承载 UserService 与 AuditService
+// （操作日志汇聚服务），二者均属 user 域，统一放在此处而非拆分独立 struct。
 type GrpcUserHandler struct {
 	user.UnimplementedUserServiceServer
+	user.UnimplementedAuditServiceServer
 	Svc service.UserService
 	Cb  *gobreaker.CircuitBreaker
+	DB  *gorm.DB
 }
 
 func (h *GrpcUserHandler) Register(ctx context.Context, req *user.RegisterRequest) (*user.RegisterResponse, error) {
@@ -297,4 +302,62 @@ func ConvertToProtoUser(u *model.UserResponse) *user.User {
 		CreatedAt: u.CreatedAt,
 		UpdatedAt: u.UpdatedAt,
 	}
+}
+
+// RecordLog 实现 user.v1.AuditService，作为各业务服务上报操作日志的汇聚点。
+// article-service / comment-service 等通过 gRPC 调用此接口写入 operation_logs。
+func (h *GrpcUserHandler) RecordLog(ctx context.Context, req *user.RecordLogRequest) (*user.RecordLogResponse, error) {
+	log := &model.OperationLog{
+		OperatorID:  uint(req.OperatorId),
+		Operator:    req.Operator,
+		Action:      audit.ActionToShort(req.Action),
+		TargetType:  req.TargetType,
+		TargetID:    uint(req.TargetId),
+		TargetTitle: req.TargetTitle,
+		Detail:      req.Detail,
+		IP:          req.Ip,
+	}
+	if err := audit.Record(ctx, h.DB, log); err != nil {
+		return &user.RecordLogResponse{
+			Code:    1,
+			Message: err.Error(),
+		}, nil
+	}
+	return &user.RecordLogResponse{
+		Code:    0,
+		Message: "success",
+		Id:      uint32(log.ID),
+	}, nil
+}
+
+// ListLogs 实现 user.v1.AuditService，供本服务管理端查询操作日志。
+func (h *GrpcUserHandler) ListLogs(ctx context.Context, req *user.ListLogsRequest) (*user.ListLogsResponse, error) {
+	logs, total, err := audit.List(ctx, h.DB, int(req.Page), int(req.PageSize), req.Action, req.TargetType, uint(req.OperatorId))
+	if err != nil {
+		return &user.ListLogsResponse{
+			Code:    1,
+			Message: err.Error(),
+		}, nil
+	}
+	out := make([]*user.OperationLog, 0, len(logs))
+	for _, l := range logs {
+		out = append(out, &user.OperationLog{
+			Id:          uint32(l.ID),
+			OperatorId:  uint32(l.OperatorID),
+			Operator:    l.Operator,
+			Action:      l.Action,
+			TargetType:  l.TargetType,
+			TargetId:    uint32(l.TargetID),
+			TargetTitle: l.TargetTitle,
+			Detail:      l.Detail,
+			Ip:          l.IP,
+			CreatedAt:   l.CreatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+	return &user.ListLogsResponse{
+		Code:    0,
+		Message: "success",
+		Logs:    out,
+		Total:   uint32(total),
+	}, nil
 }

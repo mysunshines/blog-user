@@ -95,6 +95,117 @@ func (UserErrorCode) EnumDescriptor() ([]byte, []int) {
 	return file_user_proto_rawDescGZIP(), []int{0}
 }
 
+// AuditAction 操作日志动作枚举，作为各服务上报操作日志的统一取值字典。
+// 新增动作只需在此追加（proto3 要求首个成员值为 0，且不可为空）。
+type AuditAction int32
+
+const (
+	AuditAction_AUDIT_ACTION_UNSPECIFIED AuditAction = 0
+	// 用户域
+	AuditAction_AUDIT_ACTION_UPDATE_USER  AuditAction = 1 // 更新用户资料
+	AuditAction_AUDIT_ACTION_DELETE_USER  AuditAction = 2 // 删除用户
+	AuditAction_AUDIT_ACTION_DISABLE_USER AuditAction = 3 // 禁用用户
+	AuditAction_AUDIT_ACTION_ENABLE_USER  AuditAction = 4 // 启用用户
+	AuditAction_AUDIT_ACTION_SET_ROLE     AuditAction = 5 // 修改用户角色
+	// 评论域
+	AuditAction_AUDIT_ACTION_COMMENT_CREATE  AuditAction = 10 // 创建评论
+	AuditAction_AUDIT_ACTION_COMMENT_REPLY   AuditAction = 11 // 回复评论
+	AuditAction_AUDIT_ACTION_COMMENT_UPDATE  AuditAction = 12 // 更新评论
+	AuditAction_AUDIT_ACTION_COMMENT_DELETE  AuditAction = 13 // 删除评论
+	AuditAction_AUDIT_ACTION_COMMENT_LIKE    AuditAction = 14 // 点赞评论
+	AuditAction_AUDIT_ACTION_COMMENT_ENABLE  AuditAction = 15 // 开启文章评论
+	AuditAction_AUDIT_ACTION_COMMENT_DISABLE AuditAction = 16 // 关闭文章评论
+	// 文章域
+	AuditAction_AUDIT_ACTION_ARTICLE_CREATE       AuditAction = 20 // 创建文章
+	AuditAction_AUDIT_ACTION_ARTICLE_UPDATE       AuditAction = 21 // 更新文章
+	AuditAction_AUDIT_ACTION_ARTICLE_DELETE       AuditAction = 22 // 删除文章
+	AuditAction_AUDIT_ACTION_ARTICLE_PUBLISH      AuditAction = 23 // 发布文章
+	AuditAction_AUDIT_ACTION_ARTICLE_OFFLINE      AuditAction = 24 // 下架文章
+	AuditAction_AUDIT_ACTION_ARTICLE_APPROVE      AuditAction = 25 // 审核通过
+	AuditAction_AUDIT_ACTION_ARTICLE_REJECT       AuditAction = 26 // 审核拒绝
+	AuditAction_AUDIT_ACTION_ARTICLE_SUBMIT       AuditAction = 27 // 提交审核
+	AuditAction_AUDIT_ACTION_ARTICLE_SET_CATEGORY AuditAction = 28 // 设置文章分类
+)
+
+// Enum value maps for AuditAction.
+var (
+	AuditAction_name = map[int32]string{
+		0:  "AUDIT_ACTION_UNSPECIFIED",
+		1:  "AUDIT_ACTION_UPDATE_USER",
+		2:  "AUDIT_ACTION_DELETE_USER",
+		3:  "AUDIT_ACTION_DISABLE_USER",
+		4:  "AUDIT_ACTION_ENABLE_USER",
+		5:  "AUDIT_ACTION_SET_ROLE",
+		10: "AUDIT_ACTION_COMMENT_CREATE",
+		11: "AUDIT_ACTION_COMMENT_REPLY",
+		12: "AUDIT_ACTION_COMMENT_UPDATE",
+		13: "AUDIT_ACTION_COMMENT_DELETE",
+		14: "AUDIT_ACTION_COMMENT_LIKE",
+		15: "AUDIT_ACTION_COMMENT_ENABLE",
+		16: "AUDIT_ACTION_COMMENT_DISABLE",
+		20: "AUDIT_ACTION_ARTICLE_CREATE",
+		21: "AUDIT_ACTION_ARTICLE_UPDATE",
+		22: "AUDIT_ACTION_ARTICLE_DELETE",
+		23: "AUDIT_ACTION_ARTICLE_PUBLISH",
+		24: "AUDIT_ACTION_ARTICLE_OFFLINE",
+		25: "AUDIT_ACTION_ARTICLE_APPROVE",
+		26: "AUDIT_ACTION_ARTICLE_REJECT",
+		27: "AUDIT_ACTION_ARTICLE_SUBMIT",
+		28: "AUDIT_ACTION_ARTICLE_SET_CATEGORY",
+	}
+	AuditAction_value = map[string]int32{
+		"AUDIT_ACTION_UNSPECIFIED":          0,
+		"AUDIT_ACTION_UPDATE_USER":          1,
+		"AUDIT_ACTION_DELETE_USER":          2,
+		"AUDIT_ACTION_DISABLE_USER":         3,
+		"AUDIT_ACTION_ENABLE_USER":          4,
+		"AUDIT_ACTION_SET_ROLE":             5,
+		"AUDIT_ACTION_COMMENT_CREATE":       10,
+		"AUDIT_ACTION_COMMENT_REPLY":        11,
+		"AUDIT_ACTION_COMMENT_UPDATE":       12,
+		"AUDIT_ACTION_COMMENT_DELETE":       13,
+		"AUDIT_ACTION_COMMENT_LIKE":         14,
+		"AUDIT_ACTION_COMMENT_ENABLE":       15,
+		"AUDIT_ACTION_COMMENT_DISABLE":      16,
+		"AUDIT_ACTION_ARTICLE_CREATE":       20,
+		"AUDIT_ACTION_ARTICLE_UPDATE":       21,
+		"AUDIT_ACTION_ARTICLE_DELETE":       22,
+		"AUDIT_ACTION_ARTICLE_PUBLISH":      23,
+		"AUDIT_ACTION_ARTICLE_OFFLINE":      24,
+		"AUDIT_ACTION_ARTICLE_APPROVE":      25,
+		"AUDIT_ACTION_ARTICLE_REJECT":       26,
+		"AUDIT_ACTION_ARTICLE_SUBMIT":       27,
+		"AUDIT_ACTION_ARTICLE_SET_CATEGORY": 28,
+	}
+)
+
+func (x AuditAction) Enum() *AuditAction {
+	p := new(AuditAction)
+	*p = x
+	return p
+}
+
+func (x AuditAction) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AuditAction) Descriptor() protoreflect.EnumDescriptor {
+	return file_user_proto_enumTypes[1].Descriptor()
+}
+
+func (AuditAction) Type() protoreflect.EnumType {
+	return &file_user_proto_enumTypes[1]
+}
+
+func (x AuditAction) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AuditAction.Descriptor instead.
+func (AuditAction) EnumDescriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{1}
+}
+
 type User struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1635,7 +1746,7 @@ type RecordLogRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	OperatorId    uint32                 `protobuf:"varint,1,opt,name=operator_id,json=operatorId,proto3" json:"operator_id,omitempty"`
 	Operator      string                 `protobuf:"bytes,2,opt,name=operator,proto3" json:"operator,omitempty"`
-	Action        string                 `protobuf:"bytes,3,opt,name=action,proto3" json:"action,omitempty"`
+	Action        AuditAction            `protobuf:"varint,3,opt,name=action,proto3,enum=user.v1.AuditAction" json:"action,omitempty"`
 	TargetType    string                 `protobuf:"bytes,4,opt,name=target_type,json=targetType,proto3" json:"target_type,omitempty"`
 	TargetId      uint32                 `protobuf:"varint,5,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
 	TargetTitle   string                 `protobuf:"bytes,6,opt,name=target_title,json=targetTitle,proto3" json:"target_title,omitempty"`
@@ -1689,11 +1800,11 @@ func (x *RecordLogRequest) GetOperator() string {
 	return ""
 }
 
-func (x *RecordLogRequest) GetAction() string {
+func (x *RecordLogRequest) GetAction() AuditAction {
 	if x != nil {
 		return x.Action
 	}
-	return ""
+	return AuditAction_AUDIT_ACTION_UNSPECIFIED
 }
 
 func (x *RecordLogRequest) GetTargetType() string {
@@ -2057,12 +2168,12 @@ const file_user_proto_rawDesc = "" +
 	"\x02ip\x18\t \x01(\tR\x02ip\x12\x1d\n" +
 	"\n" +
 	"created_at\x18\n" +
-	" \x01(\tR\tcreatedAt\"\xf0\x01\n" +
+	" \x01(\tR\tcreatedAt\"\x86\x02\n" +
 	"\x10RecordLogRequest\x12\x1f\n" +
 	"\voperator_id\x18\x01 \x01(\rR\n" +
 	"operatorId\x12\x1a\n" +
-	"\boperator\x18\x02 \x01(\tR\boperator\x12\x16\n" +
-	"\x06action\x18\x03 \x01(\tR\x06action\x12\x1f\n" +
+	"\boperator\x18\x02 \x01(\tR\boperator\x12,\n" +
+	"\x06action\x18\x03 \x01(\x0e2\x14.user.v1.AuditActionR\x06action\x12\x1f\n" +
 	"\vtarget_type\x18\x04 \x01(\tR\n" +
 	"targetType\x12\x1b\n" +
 	"\ttarget_id\x18\x05 \x01(\rR\btargetId\x12!\n" +
@@ -2097,7 +2208,31 @@ const file_user_proto_rawDesc = "" +
 	"\x12USER_UPDATE_FAILED\x10\xac\x9c\x01\x12\x18\n" +
 	"\x12USER_DELETE_FAILED\x10\xad\x9c\x01\x12\x17\n" +
 	"\x11USER_LOGIN_FAILED\x10\xae\x9c\x01\x12\x1a\n" +
-	"\x14USER_REGISTER_FAILED\x10\xaf\x9c\x012\xd4\x06\n" +
+	"\x14USER_REGISTER_FAILED\x10\xaf\x9c\x01*\xd6\x05\n" +
+	"\vAuditAction\x12\x1c\n" +
+	"\x18AUDIT_ACTION_UNSPECIFIED\x10\x00\x12\x1c\n" +
+	"\x18AUDIT_ACTION_UPDATE_USER\x10\x01\x12\x1c\n" +
+	"\x18AUDIT_ACTION_DELETE_USER\x10\x02\x12\x1d\n" +
+	"\x19AUDIT_ACTION_DISABLE_USER\x10\x03\x12\x1c\n" +
+	"\x18AUDIT_ACTION_ENABLE_USER\x10\x04\x12\x19\n" +
+	"\x15AUDIT_ACTION_SET_ROLE\x10\x05\x12\x1f\n" +
+	"\x1bAUDIT_ACTION_COMMENT_CREATE\x10\n" +
+	"\x12\x1e\n" +
+	"\x1aAUDIT_ACTION_COMMENT_REPLY\x10\v\x12\x1f\n" +
+	"\x1bAUDIT_ACTION_COMMENT_UPDATE\x10\f\x12\x1f\n" +
+	"\x1bAUDIT_ACTION_COMMENT_DELETE\x10\r\x12\x1d\n" +
+	"\x19AUDIT_ACTION_COMMENT_LIKE\x10\x0e\x12\x1f\n" +
+	"\x1bAUDIT_ACTION_COMMENT_ENABLE\x10\x0f\x12 \n" +
+	"\x1cAUDIT_ACTION_COMMENT_DISABLE\x10\x10\x12\x1f\n" +
+	"\x1bAUDIT_ACTION_ARTICLE_CREATE\x10\x14\x12\x1f\n" +
+	"\x1bAUDIT_ACTION_ARTICLE_UPDATE\x10\x15\x12\x1f\n" +
+	"\x1bAUDIT_ACTION_ARTICLE_DELETE\x10\x16\x12 \n" +
+	"\x1cAUDIT_ACTION_ARTICLE_PUBLISH\x10\x17\x12 \n" +
+	"\x1cAUDIT_ACTION_ARTICLE_OFFLINE\x10\x18\x12 \n" +
+	"\x1cAUDIT_ACTION_ARTICLE_APPROVE\x10\x19\x12\x1f\n" +
+	"\x1bAUDIT_ACTION_ARTICLE_REJECT\x10\x1a\x12\x1f\n" +
+	"\x1bAUDIT_ACTION_ARTICLE_SUBMIT\x10\x1b\x12%\n" +
+	"!AUDIT_ACTION_ARTICLE_SET_CATEGORY\x10\x1c2\xd4\x06\n" +
 	"\vUserService\x12?\n" +
 	"\bRegister\x12\x18.user.v1.RegisterRequest\x1a\x19.user.v1.RegisterResponse\x126\n" +
 	"\x05Login\x12\x15.user.v1.LoginRequest\x1a\x16.user.v1.LoginResponse\x129\n" +
@@ -2129,79 +2264,81 @@ func file_user_proto_rawDescGZIP() []byte {
 	return file_user_proto_rawDescData
 }
 
-var file_user_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_user_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_user_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
 var file_user_proto_goTypes = []any{
 	(UserErrorCode)(0),             // 0: user.v1.UserErrorCode
-	(*User)(nil),                   // 1: user.v1.User
-	(*RegisterRequest)(nil),        // 2: user.v1.RegisterRequest
-	(*RegisterResponse)(nil),       // 3: user.v1.RegisterResponse
-	(*LoginRequest)(nil),           // 4: user.v1.LoginRequest
-	(*LoginResponse)(nil),          // 5: user.v1.LoginResponse
-	(*LogoutRequest)(nil),          // 6: user.v1.LogoutRequest
-	(*LogoutResponse)(nil),         // 7: user.v1.LogoutResponse
-	(*GetUserRequest)(nil),         // 8: user.v1.GetUserRequest
-	(*GetUserResponse)(nil),        // 9: user.v1.GetUserResponse
-	(*ValidateTokenRequest)(nil),   // 10: user.v1.ValidateTokenRequest
-	(*ValidateTokenResponse)(nil),  // 11: user.v1.ValidateTokenResponse
-	(*UpdateUserRequest)(nil),      // 12: user.v1.UpdateUserRequest
-	(*UpdateUserResponse)(nil),     // 13: user.v1.UpdateUserResponse
-	(*DeleteUserRequest)(nil),      // 14: user.v1.DeleteUserRequest
-	(*DeleteUserResponse)(nil),     // 15: user.v1.DeleteUserResponse
-	(*GetUsersRequest)(nil),        // 16: user.v1.GetUsersRequest
-	(*GetUsersResponse)(nil),       // 17: user.v1.GetUsersResponse
-	(*ChangePasswordRequest)(nil),  // 18: user.v1.ChangePasswordRequest
-	(*ChangePasswordResponse)(nil), // 19: user.v1.ChangePasswordResponse
-	(*BlacklistRequest)(nil),       // 20: user.v1.BlacklistRequest
-	(*BlacklistResponse)(nil),      // 21: user.v1.BlacklistResponse
-	(*IsBlacklistRequest)(nil),     // 22: user.v1.IsBlacklistRequest
-	(*IsBlacklistResponse)(nil),    // 23: user.v1.IsBlacklistResponse
-	(*OperationLog)(nil),           // 24: user.v1.OperationLog
-	(*RecordLogRequest)(nil),       // 25: user.v1.RecordLogRequest
-	(*RecordLogResponse)(nil),      // 26: user.v1.RecordLogResponse
-	(*ListLogsRequest)(nil),        // 27: user.v1.ListLogsRequest
-	(*ListLogsResponse)(nil),       // 28: user.v1.ListLogsResponse
+	(AuditAction)(0),               // 1: user.v1.AuditAction
+	(*User)(nil),                   // 2: user.v1.User
+	(*RegisterRequest)(nil),        // 3: user.v1.RegisterRequest
+	(*RegisterResponse)(nil),       // 4: user.v1.RegisterResponse
+	(*LoginRequest)(nil),           // 5: user.v1.LoginRequest
+	(*LoginResponse)(nil),          // 6: user.v1.LoginResponse
+	(*LogoutRequest)(nil),          // 7: user.v1.LogoutRequest
+	(*LogoutResponse)(nil),         // 8: user.v1.LogoutResponse
+	(*GetUserRequest)(nil),         // 9: user.v1.GetUserRequest
+	(*GetUserResponse)(nil),        // 10: user.v1.GetUserResponse
+	(*ValidateTokenRequest)(nil),   // 11: user.v1.ValidateTokenRequest
+	(*ValidateTokenResponse)(nil),  // 12: user.v1.ValidateTokenResponse
+	(*UpdateUserRequest)(nil),      // 13: user.v1.UpdateUserRequest
+	(*UpdateUserResponse)(nil),     // 14: user.v1.UpdateUserResponse
+	(*DeleteUserRequest)(nil),      // 15: user.v1.DeleteUserRequest
+	(*DeleteUserResponse)(nil),     // 16: user.v1.DeleteUserResponse
+	(*GetUsersRequest)(nil),        // 17: user.v1.GetUsersRequest
+	(*GetUsersResponse)(nil),       // 18: user.v1.GetUsersResponse
+	(*ChangePasswordRequest)(nil),  // 19: user.v1.ChangePasswordRequest
+	(*ChangePasswordResponse)(nil), // 20: user.v1.ChangePasswordResponse
+	(*BlacklistRequest)(nil),       // 21: user.v1.BlacklistRequest
+	(*BlacklistResponse)(nil),      // 22: user.v1.BlacklistResponse
+	(*IsBlacklistRequest)(nil),     // 23: user.v1.IsBlacklistRequest
+	(*IsBlacklistResponse)(nil),    // 24: user.v1.IsBlacklistResponse
+	(*OperationLog)(nil),           // 25: user.v1.OperationLog
+	(*RecordLogRequest)(nil),       // 26: user.v1.RecordLogRequest
+	(*RecordLogResponse)(nil),      // 27: user.v1.RecordLogResponse
+	(*ListLogsRequest)(nil),        // 28: user.v1.ListLogsRequest
+	(*ListLogsResponse)(nil),       // 29: user.v1.ListLogsResponse
 }
 var file_user_proto_depIdxs = []int32{
-	1,  // 0: user.v1.RegisterResponse.user:type_name -> user.v1.User
-	1,  // 1: user.v1.LoginResponse.user:type_name -> user.v1.User
-	1,  // 2: user.v1.GetUserResponse.user:type_name -> user.v1.User
-	1,  // 3: user.v1.UpdateUserResponse.user:type_name -> user.v1.User
-	1,  // 4: user.v1.GetUsersResponse.users:type_name -> user.v1.User
-	24, // 5: user.v1.ListLogsResponse.logs:type_name -> user.v1.OperationLog
-	2,  // 6: user.v1.UserService.Register:input_type -> user.v1.RegisterRequest
-	4,  // 7: user.v1.UserService.Login:input_type -> user.v1.LoginRequest
-	6,  // 8: user.v1.UserService.Logout:input_type -> user.v1.LogoutRequest
-	8,  // 9: user.v1.UserService.GetUser:input_type -> user.v1.GetUserRequest
-	10, // 10: user.v1.UserService.ValidateToken:input_type -> user.v1.ValidateTokenRequest
-	12, // 11: user.v1.UserService.UpdateUser:input_type -> user.v1.UpdateUserRequest
-	14, // 12: user.v1.UserService.DeleteUser:input_type -> user.v1.DeleteUserRequest
-	16, // 13: user.v1.UserService.GetUsers:input_type -> user.v1.GetUsersRequest
-	18, // 14: user.v1.UserService.ChangePassword:input_type -> user.v1.ChangePasswordRequest
-	20, // 15: user.v1.UserService.AddToBlacklist:input_type -> user.v1.BlacklistRequest
-	20, // 16: user.v1.UserService.RemoveFromBlacklist:input_type -> user.v1.BlacklistRequest
-	22, // 17: user.v1.UserService.IsInBlacklist:input_type -> user.v1.IsBlacklistRequest
-	25, // 18: user.v1.AuditService.RecordLog:input_type -> user.v1.RecordLogRequest
-	27, // 19: user.v1.AuditService.ListLogs:input_type -> user.v1.ListLogsRequest
-	3,  // 20: user.v1.UserService.Register:output_type -> user.v1.RegisterResponse
-	5,  // 21: user.v1.UserService.Login:output_type -> user.v1.LoginResponse
-	7,  // 22: user.v1.UserService.Logout:output_type -> user.v1.LogoutResponse
-	9,  // 23: user.v1.UserService.GetUser:output_type -> user.v1.GetUserResponse
-	11, // 24: user.v1.UserService.ValidateToken:output_type -> user.v1.ValidateTokenResponse
-	13, // 25: user.v1.UserService.UpdateUser:output_type -> user.v1.UpdateUserResponse
-	15, // 26: user.v1.UserService.DeleteUser:output_type -> user.v1.DeleteUserResponse
-	17, // 27: user.v1.UserService.GetUsers:output_type -> user.v1.GetUsersResponse
-	19, // 28: user.v1.UserService.ChangePassword:output_type -> user.v1.ChangePasswordResponse
-	21, // 29: user.v1.UserService.AddToBlacklist:output_type -> user.v1.BlacklistResponse
-	21, // 30: user.v1.UserService.RemoveFromBlacklist:output_type -> user.v1.BlacklistResponse
-	23, // 31: user.v1.UserService.IsInBlacklist:output_type -> user.v1.IsBlacklistResponse
-	26, // 32: user.v1.AuditService.RecordLog:output_type -> user.v1.RecordLogResponse
-	28, // 33: user.v1.AuditService.ListLogs:output_type -> user.v1.ListLogsResponse
-	20, // [20:34] is the sub-list for method output_type
-	6,  // [6:20] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	2,  // 0: user.v1.RegisterResponse.user:type_name -> user.v1.User
+	2,  // 1: user.v1.LoginResponse.user:type_name -> user.v1.User
+	2,  // 2: user.v1.GetUserResponse.user:type_name -> user.v1.User
+	2,  // 3: user.v1.UpdateUserResponse.user:type_name -> user.v1.User
+	2,  // 4: user.v1.GetUsersResponse.users:type_name -> user.v1.User
+	1,  // 5: user.v1.RecordLogRequest.action:type_name -> user.v1.AuditAction
+	25, // 6: user.v1.ListLogsResponse.logs:type_name -> user.v1.OperationLog
+	3,  // 7: user.v1.UserService.Register:input_type -> user.v1.RegisterRequest
+	5,  // 8: user.v1.UserService.Login:input_type -> user.v1.LoginRequest
+	7,  // 9: user.v1.UserService.Logout:input_type -> user.v1.LogoutRequest
+	9,  // 10: user.v1.UserService.GetUser:input_type -> user.v1.GetUserRequest
+	11, // 11: user.v1.UserService.ValidateToken:input_type -> user.v1.ValidateTokenRequest
+	13, // 12: user.v1.UserService.UpdateUser:input_type -> user.v1.UpdateUserRequest
+	15, // 13: user.v1.UserService.DeleteUser:input_type -> user.v1.DeleteUserRequest
+	17, // 14: user.v1.UserService.GetUsers:input_type -> user.v1.GetUsersRequest
+	19, // 15: user.v1.UserService.ChangePassword:input_type -> user.v1.ChangePasswordRequest
+	21, // 16: user.v1.UserService.AddToBlacklist:input_type -> user.v1.BlacklistRequest
+	21, // 17: user.v1.UserService.RemoveFromBlacklist:input_type -> user.v1.BlacklistRequest
+	23, // 18: user.v1.UserService.IsInBlacklist:input_type -> user.v1.IsBlacklistRequest
+	26, // 19: user.v1.AuditService.RecordLog:input_type -> user.v1.RecordLogRequest
+	28, // 20: user.v1.AuditService.ListLogs:input_type -> user.v1.ListLogsRequest
+	4,  // 21: user.v1.UserService.Register:output_type -> user.v1.RegisterResponse
+	6,  // 22: user.v1.UserService.Login:output_type -> user.v1.LoginResponse
+	8,  // 23: user.v1.UserService.Logout:output_type -> user.v1.LogoutResponse
+	10, // 24: user.v1.UserService.GetUser:output_type -> user.v1.GetUserResponse
+	12, // 25: user.v1.UserService.ValidateToken:output_type -> user.v1.ValidateTokenResponse
+	14, // 26: user.v1.UserService.UpdateUser:output_type -> user.v1.UpdateUserResponse
+	16, // 27: user.v1.UserService.DeleteUser:output_type -> user.v1.DeleteUserResponse
+	18, // 28: user.v1.UserService.GetUsers:output_type -> user.v1.GetUsersResponse
+	20, // 29: user.v1.UserService.ChangePassword:output_type -> user.v1.ChangePasswordResponse
+	22, // 30: user.v1.UserService.AddToBlacklist:output_type -> user.v1.BlacklistResponse
+	22, // 31: user.v1.UserService.RemoveFromBlacklist:output_type -> user.v1.BlacklistResponse
+	24, // 32: user.v1.UserService.IsInBlacklist:output_type -> user.v1.IsBlacklistResponse
+	27, // 33: user.v1.AuditService.RecordLog:output_type -> user.v1.RecordLogResponse
+	29, // 34: user.v1.AuditService.ListLogs:output_type -> user.v1.ListLogsResponse
+	21, // [21:35] is the sub-list for method output_type
+	7,  // [7:21] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_user_proto_init() }
@@ -2214,7 +2351,7 @@ func file_user_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_proto_rawDesc), len(file_user_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   28,
 			NumExtensions: 0,
 			NumServices:   2,

@@ -9,8 +9,9 @@ import (
 	"github.com/mysunshines/blog-user/internal/model"
 	"github.com/mysunshines/blog-user/internal/service"
 	"github.com/mysunshines/blog-user/pkg/response"
+	user "github.com/mysunshines/blog-user/proto/pb"
 
-	"github.com/mysunshines/gocommon/constants"
+	gcommon "github.com/mysunshines/gocommon/constants"
 	commonmiddleware "github.com/mysunshines/gocommon/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -207,7 +208,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	_ = audit.Record(c.Request.Context(), h.db, &model.OperationLog{
 		OperatorID:  getUserID(c),
 		Operator:    operatorName,
-		Action:      "delete_user",
+		Action:      audit.ActionToShort(user.AuditAction_AUDIT_ACTION_DELETE_USER),
 		TargetType:  "user",
 		TargetID:    uint(id),
 		TargetTitle: "",
@@ -406,26 +407,26 @@ func (h *UserHandler) AdminUpdateUser(c *gin.Context) {
 		req.UserID = uint(id)
 	}
 
-	user, err := h.svc.AdminUpdateUser(c.Request.Context(), &req)
+	updatedUser, err := h.svc.AdminUpdateUser(c.Request.Context(), &req)
 	if err != nil {
 		response.Fail(c, err)
 		return
 	}
 
 	// 审计：根据变更内容记录动作
-	action := "update_user"
+	action := user.AuditAction_AUDIT_ACTION_UPDATE_USER
 	detail := ""
 	if req.Status != nil {
 		if *req.Status == 0 {
-			action = "disable_user"
+			action = user.AuditAction_AUDIT_ACTION_DISABLE_USER
 			detail = "禁用账号"
 		} else {
-			action = "enable_user"
+			action = user.AuditAction_AUDIT_ACTION_ENABLE_USER
 			detail = "启用账号"
 		}
 	}
 	if req.Role != nil {
-		action = "set_role"
+		action = user.AuditAction_AUDIT_ACTION_SET_ROLE
 		roleName := "普通用户"
 		if *req.Role == 2 {
 			roleName = "管理员"
@@ -442,22 +443,22 @@ func (h *UserHandler) AdminUpdateUser(c *gin.Context) {
 	_ = audit.Record(c.Request.Context(), h.db, &model.OperationLog{
 		OperatorID:  getUserID(c),
 		Operator:    operatorName,
-		Action:      action,
+		Action:      audit.ActionToShort(action),
 		TargetType:  "user",
-		TargetID:    user.ID,
-		TargetTitle: user.Username,
+		TargetID:    updatedUser.ID,
+		TargetTitle: updatedUser.Username,
 		Detail:      detail,
 		IP:          c.ClientIP(),
 	})
 
-	response.Success(c, user)
+	response.Success(c, updatedUser)
 }
 
 // 辅助函数
 func extractToken(c *gin.Context) string {
 	authHeader := c.GetHeader("Authorization")
-	if len(authHeader) > constants.JWTAuthSchemeLen && authHeader[:constants.JWTAuthSchemeLen] == constants.JWTAuthScheme {
-		return authHeader[constants.JWTAuthSchemeLen:]
+	if len(authHeader) > gcommon.JWTAuthSchemeLen && authHeader[:gcommon.JWTAuthSchemeLen] == gcommon.JWTAuthScheme {
+		return authHeader[gcommon.JWTAuthSchemeLen:]
 	}
 	return ""
 }
@@ -482,4 +483,34 @@ func getUserID(c *gin.Context) uint {
 		}
 	}
 	return 0
+}
+
+// ListOperationLogs 管理端分页查询操作日志
+// @Summary 查询操作日志
+// @Tags audit
+// @Produce json
+// @Param page query int false "页码"
+// @Param page_size query int false "每页大小"
+// @Param action query string false "操作动作"
+// @Param target_type query string false "目标类型"
+// @Success 200 {object} response.Response
+// @Router /api/v1/admin/user/operation-logs [get]
+func (h *UserHandler) ListOperationLogs(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	action := c.Query("action")
+	targetType := c.Query("target_type")
+	operatorID, _ := strconv.ParseUint(c.Query("operator_id"), 10, 32)
+
+	logs, total, err := audit.List(c.Request.Context(), h.db, page, pageSize, action, targetType, uint(operatorID))
+	if err != nil {
+		response.Fail(c, err)
+		return
+	}
+	response.Success(c, gin.H{
+		"logs":      logs,
+		"total":     total,
+		"page":      page,
+		"page_size": pageSize,
+	})
 }

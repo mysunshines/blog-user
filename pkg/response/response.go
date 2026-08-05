@@ -12,21 +12,21 @@ import (
 type Response struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	Data    any `json:"data,omitempty"`
 }
 
 // PageResponse 分页响应
 type PageResponse struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	Data    any `json:"data,omitempty"`
 	Total   int64       `json:"total"`
 	Page    int         `json:"page"`
 	Size    int         `json:"size"`
 }
 
 // Success 成功响应
-func Success(c *gin.Context, data interface{}) {
+func Success(c *gin.Context, data any) {
 	c.JSON(http.StatusOK, Response{
 		Code:    0,
 		Message: "success",
@@ -35,7 +35,7 @@ func Success(c *gin.Context, data interface{}) {
 }
 
 // PageSuccess 分页成功响应
-func PageSuccess(c *gin.Context, data interface{}, total int64, page, size int) {
+func PageSuccess(c *gin.Context, data any, total int64, page, size int) {
 	c.JSON(http.StatusOK, PageResponse{
 		Code:    0,
 		Message: "success",
@@ -119,7 +119,7 @@ func Fail(c *gin.Context, err error) {
 
 // SuccessLogin 登录成功响应（统一使用 data 包裹结构，与 Success/SuccessWithMessage 保持一致）。
 // 随响应下发 csrf_token，前端需在非安全方法的已登录请求中原样通过 X-CSRF-Token 头回传。
-func SuccessLogin(c *gin.Context, token string, user interface{}, csrfToken string) {
+func SuccessLogin(c *gin.Context, token string, user any, csrfToken string) {
 	c.JSON(http.StatusOK, Response{
 		Code:    0,
 		Message: "success",
@@ -132,7 +132,7 @@ func SuccessLogin(c *gin.Context, token string, user interface{}, csrfToken stri
 }
 
 // SuccessWithMessage 带消息的成功响应
-func SuccessWithMessage(c *gin.Context, message string, data interface{}) {
+func SuccessWithMessage(c *gin.Context, message string, data any) {
 	c.JSON(http.StatusOK, Response{
 		Code:    0,
 		Message: message,

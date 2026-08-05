@@ -179,6 +179,36 @@ message IsBlacklistResponse {
 
 // ===================== 操作日志 (Audit) =====================
 
+// AuditAction 操作日志动作枚举，作为各服务上报操作日志的统一取值字典。
+// 新增动作只需在此追加（proto3 要求首个成员值为 0，且不可为空）。
+enum AuditAction {
+    AUDIT_ACTION_UNSPECIFIED = 0;
+    // 用户域
+    AUDIT_ACTION_UPDATE_USER = 1;   // 更新用户资料
+    AUDIT_ACTION_DELETE_USER = 2;   // 删除用户
+    AUDIT_ACTION_DISABLE_USER = 3;  // 禁用用户
+    AUDIT_ACTION_ENABLE_USER = 4;   // 启用用户
+    AUDIT_ACTION_SET_ROLE = 5;      // 修改用户角色
+    // 评论域
+    AUDIT_ACTION_COMMENT_CREATE = 10; // 创建评论
+    AUDIT_ACTION_COMMENT_REPLY = 11;  // 回复评论
+    AUDIT_ACTION_COMMENT_UPDATE = 12; // 更新评论
+    AUDIT_ACTION_COMMENT_DELETE = 13; // 删除评论
+    AUDIT_ACTION_COMMENT_LIKE = 14;   // 点赞评论
+    AUDIT_ACTION_COMMENT_ENABLE = 15; // 开启文章评论
+    AUDIT_ACTION_COMMENT_DISABLE = 16; // 关闭文章评论
+    // 文章域
+    AUDIT_ACTION_ARTICLE_CREATE = 20;  // 创建文章
+    AUDIT_ACTION_ARTICLE_UPDATE = 21;  // 更新文章
+    AUDIT_ACTION_ARTICLE_DELETE = 22;  // 删除文章
+    AUDIT_ACTION_ARTICLE_PUBLISH = 23; // 发布文章
+    AUDIT_ACTION_ARTICLE_OFFLINE = 24; // 下架文章
+    AUDIT_ACTION_ARTICLE_APPROVE = 25; // 审核通过
+    AUDIT_ACTION_ARTICLE_REJECT = 26;  // 审核拒绝
+    AUDIT_ACTION_ARTICLE_SUBMIT = 27;  // 提交审核
+    AUDIT_ACTION_ARTICLE_SET_CATEGORY = 28; // 设置文章分类
+}
+
 message OperationLog {
     uint32 id = 1;
     uint32 operator_id = 2;
@@ -195,7 +225,7 @@ message OperationLog {
 message RecordLogRequest {
     uint32 operator_id = 1;
     string operator = 2;
-    string action = 3;
+    AuditAction action = 3;
     string target_type = 4;
     uint32 target_id = 5;
     string target_title = 6;

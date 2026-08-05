@@ -46,7 +46,7 @@ type Server struct {
 	userRepo      repository.UserRepository
 	blacklistRepo repository.BlacklistRepository
 	userHandl     *v1.UserHandler
-	auditHandl    *v1.AuditHandler
+
 	db            *gorm.DB
 	cb            *gobreaker.CircuitBreaker
 }
@@ -91,7 +91,6 @@ func NewServer(cfg *config.Config) *Server {
 
 	// 初始化处理器
 	userHandl := v1.NewUserHandler(userSvc, db)
-	auditHandl := v1.NewAuditHandler(db)
 
 	return &Server{
 		cfg:           cfg,
@@ -99,7 +98,6 @@ func NewServer(cfg *config.Config) *Server {
 		userRepo:      userRepo,
 		blacklistRepo: blacklistRepo,
 		userHandl:     userHandl,
-		auditHandl:    auditHandl,
 		db:            db,
 		cb:            cb,
 	}
@@ -179,7 +177,7 @@ func registerToConsul(cfg *config.Config) func() error {
 // runDBMigration 在分布式锁保护下执行 GORM AutoMigrate。
 // 多实例部署时仅一个实例执行建表/补列，避免并发 ALTER 产生元数据争用。
 // Redis 不可用时降级为直接迁移（GORM AutoMigrate 本身幂等）。
-func runDBMigration(db interface{ AutoMigrate(dst ...interface{}) error }, lockKey string, models ...interface{}) {
+func runDBMigration(db interface{ AutoMigrate(dst ...any) error }, lockKey string, models ...any) {
 	const migrationLockTTL = 60 * time.Second
 	hostname, _ := os.Hostname()
 	instanceID := fmt.Sprintf("%s-%d", hostname, os.Getpid())
@@ -290,7 +288,7 @@ func (s *Server) runHTTPServer() {
 			adminGroup.GET("", s.userHandl.AdminGetUsers)
 			adminGroup.PUT("/:id", s.userHandl.AdminUpdateUser)
 			adminGroup.DELETE("/:id", s.userHandl.DeleteUser)
-			adminGroup.GET("/operation-logs", s.auditHandl.List)
+			adminGroup.GET("/operation-logs", s.userHandl.ListOperationLogs)
 		}
 	}
 
@@ -334,11 +332,13 @@ func (s *Server) runGRPCServer() {
 	}
 
 	s.grpcServer = grpc.NewServer(grpcOpts...)
-	user.RegisterUserServiceServer(s.grpcServer, &v1.GrpcUserHandler{
+	userHandler := &v1.GrpcUserHandler{
 		Svc: s.userSvc,
 		Cb:  s.cb,
-	})
-	user.RegisterAuditServiceServer(s.grpcServer, v1.NewGrpcAuditHandler(s.db))
+		DB:  s.db,
+	}
+	user.RegisterUserServiceServer(s.grpcServer, userHandler)
+	user.RegisterAuditServiceServer(s.grpcServer, userHandler)
 	reflection.Register(s.grpcServer)
 
 	log.Infof("gRPC server starting on %s", s.cfg.GRPC.Addr())
@@ -348,8 +348,8 @@ func (s *Server) runGRPCServer() {
 }
 
 // grpcUnaryInterceptor gRPC 统一拦截器：超时+熔断
-func (s *Server) grpcUnaryInterceptor(ctx context.Context, req interface{},
-	info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func (s *Server) grpcUnaryInterceptor(ctx context.Context, req any,
+	info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	ctx, cancel := context.WithTimeout(ctx, constants.DefaultGRPCUnaryTimeout*time.Second)
 	defer cancel()
 
