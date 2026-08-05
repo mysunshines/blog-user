@@ -498,17 +498,19 @@ func (s *userService) AdminUpdateUser(ctx context.Context, req *model.AdminUpdat
 		return nil, apperrors.New(apperrors.ErrInternal, "Failed to get user")
 	}
 
+	// 构造需更新的列（用 map 避免结构体 Updates 跳过零值，如禁用 status=0）
+	cols := map[string]interface{}{}
 	if req.Nickname != "" {
-		user.Nickname = req.Nickname
+		cols["nickname"] = req.Nickname
 	}
 	if req.Role != nil {
-		user.Role = *req.Role
+		cols["role"] = *req.Role
 	}
 	if req.Status != nil {
-		user.Status = *req.Status
+		cols["status"] = *req.Status
 	}
 
-	if err := s.repo.Update(ctx, user); err != nil {
+	if err := s.repo.UpdateFields(ctx, req.UserID, cols); err != nil {
 		return nil, apperrors.New(apperrors.ErrUpdateFailed, "Failed to update user")
 	}
 

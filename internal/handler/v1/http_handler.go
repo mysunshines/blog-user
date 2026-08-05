@@ -5,6 +5,7 @@ package v1
 import (
 	"strconv"
 
+	"github.com/mysunshines/blog-user/internal/audit"
 	"github.com/mysunshines/blog-user/internal/model"
 	"github.com/mysunshines/blog-user/internal/service"
 	"github.com/mysunshines/blog-user/pkg/response"
@@ -13,14 +14,16 @@ import (
 	commonmiddleware "github.com/mysunshines/gocommon/middleware"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type UserHandler struct {
 	svc service.UserService
+	db  *gorm.DB
 }
 
-func NewUserHandler(svc service.UserService) *UserHandler {
-	return &UserHandler{svc: svc}
+func NewUserHandler(svc service.UserService, db *gorm.DB) *UserHandler {
+	return &UserHandler{svc: svc, db: db}
 }
 
 // Register 用户注册
@@ -194,6 +197,23 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 		response.Fail(c, err)
 		return
 	}
+
+	var operatorName string
+	if v, ok := c.Get(commonmiddleware.UsernameContextKey); ok {
+		if s, ok2 := v.(string); ok2 {
+			operatorName = s
+		}
+	}
+	_ = audit.Record(c.Request.Context(), h.db, &model.OperationLog{
+		OperatorID:  getUserID(c),
+		Operator:    operatorName,
+		Action:      "delete_user",
+		TargetType:  "user",
+		TargetID:    uint(id),
+		TargetTitle: "",
+		Detail:      "",
+		IP:          c.ClientIP(),
+	})
 
 	response.SuccessWithMessage(c, "删除成功", nil)
 }
@@ -391,6 +411,44 @@ func (h *UserHandler) AdminUpdateUser(c *gin.Context) {
 		response.Fail(c, err)
 		return
 	}
+
+	// 审计：根据变更内容记录动作
+	action := "update_user"
+	detail := ""
+	if req.Status != nil {
+		if *req.Status == 0 {
+			action = "disable_user"
+			detail = "禁用账号"
+		} else {
+			action = "enable_user"
+			detail = "启用账号"
+		}
+	}
+	if req.Role != nil {
+		action = "set_role"
+		roleName := "普通用户"
+		if *req.Role == 2 {
+			roleName = "管理员"
+		}
+		detail = "设为" + roleName
+	}
+
+	var operatorName string
+	if v, ok := c.Get(commonmiddleware.UsernameContextKey); ok {
+		if s, ok2 := v.(string); ok2 {
+			operatorName = s
+		}
+	}
+	_ = audit.Record(c.Request.Context(), h.db, &model.OperationLog{
+		OperatorID:  getUserID(c),
+		Operator:    operatorName,
+		Action:      action,
+		TargetType:  "user",
+		TargetID:    user.ID,
+		TargetTitle: user.Username,
+		Detail:      detail,
+		IP:          c.ClientIP(),
+	})
 
 	response.Success(c, user)
 }

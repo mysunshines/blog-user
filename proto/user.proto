@@ -176,3 +176,57 @@ message IsBlacklistResponse {
     string message = 2;
     bool in_blacklist = 3;
 }
+
+// ===================== 操作日志 (Audit) =====================
+
+message OperationLog {
+    uint32 id = 1;
+    uint32 operator_id = 2;
+    string operator = 3;
+    string action = 4;
+    string target_type = 5;
+    uint32 target_id = 6;
+    string target_title = 7;
+    string detail = 8;
+    string ip = 9;
+    string created_at = 10;
+}
+
+message RecordLogRequest {
+    uint32 operator_id = 1;
+    string operator = 2;
+    string action = 3;
+    string target_type = 4;
+    uint32 target_id = 5;
+    string target_title = 6;
+    string detail = 7;
+    string ip = 8;
+}
+
+message RecordLogResponse {
+    uint32 code = 1;
+    string message = 2;
+    uint32 id = 3;
+}
+
+message ListLogsRequest {
+    uint32 page = 1;
+    uint32 page_size = 2;
+    string action = 3;
+    string target_type = 4;
+    uint32 operator_id = 5;
+}
+
+message ListLogsResponse {
+    uint32 code = 1;
+    string message = 2;
+    repeated OperationLog logs = 3;
+    uint32 total = 4;
+}
+
+// AuditService 操作日志服务：由各业务服务通过 gRPC 上报操作记录，
+// user-service 作为日志归属方统一落库，并对外提供管理端查询接口。
+service AuditService {
+    rpc RecordLog(RecordLogRequest) returns (RecordLogResponse);
+    rpc ListLogs(ListLogsRequest) returns (ListLogsResponse);
+}

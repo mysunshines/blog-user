@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	commonconfig "github.com/mysunshines/gocommon/config"
+	"github.com/mysunshines/gocommon/constants"
 	"gopkg.in/yaml.v3"
 )
 
@@ -73,7 +74,7 @@ func Get() *Config {
 
 func setDefaults(c *Config) {
 	if c.App.Env == "" {
-		c.App.Env = "dev"
+		c.App.Env = constants.EnvDevelopment
 	}
 	if c.App.Name == "" {
 		c.App.Name = "user-service"
@@ -115,7 +116,7 @@ func setDefaults(c *Config) {
 		c.Metrics.Port = 9091
 	}
 	if c.Metrics.Path == "" {
-		c.Metrics.Path = "/metrics"
+		c.Metrics.Path = constants.MetricsPath
 	}
 	if c.RateLimit.QPS == 0 {
 		c.RateLimit.QPS = 100
@@ -132,57 +133,57 @@ func setDefaults(c *Config) {
 }
 
 func applyEnvOverrides(c *Config) {
-	if v := os.Getenv("DB_HOST"); v != "" {
+	if v := os.Getenv(constants.EnvDBHost); v != "" {
 		c.Database.Host = v
 	}
-	if v := os.Getenv("DB_PORT"); v != "" {
+	if v := os.Getenv(constants.EnvDBPort); v != "" {
 		if port, err := strconv.Atoi(v); err == nil {
 			c.Database.Port = port
 		}
 	}
-	if v := os.Getenv("DB_USER"); v != "" {
+	if v := os.Getenv(constants.EnvDBUser); v != "" {
 		c.Database.User = v
 	}
-	if v := os.Getenv("DB_PASSWORD"); v != "" {
+	if v := os.Getenv(constants.EnvDBPassword); v != "" {
 		c.Database.Password = v
 	}
-	if v := os.Getenv("DB_NAME"); v != "" {
+	if v := os.Getenv(constants.EnvDBName); v != "" {
 		c.Database.Name = v
 	}
-	if v := os.Getenv("REDIS_HOST"); v != "" {
+	if v := os.Getenv(constants.EnvRedisHost); v != "" {
 		c.Redis.Host = v
 	}
-	if v := os.Getenv("REDIS_PORT"); v != "" {
+	if v := os.Getenv(constants.EnvRedisPort); v != "" {
 		if port, err := strconv.Atoi(v); err == nil {
 			c.Redis.Port = port
 		}
 	}
-	if v := os.Getenv("REDIS_PASSWORD"); v != "" {
+	if v := os.Getenv(constants.EnvRedisPassword); v != "" {
 		c.Redis.Password = v
 	}
-	if v := os.Getenv("CONSUL_ADDRESS"); v != "" {
+	if v := os.Getenv(constants.EnvConsulAddress); v != "" {
 		c.Consul.Address = v
 	}
-	if v := os.Getenv("GRPC_PORT"); v != "" {
+	if v := os.Getenv(constants.EnvGRPCPort); v != "" {
 		if port, err := strconv.Atoi(v); err == nil {
 			c.GRPC.Port = port
 		}
 	}
-	if v := os.Getenv("SMTP_HOST"); v != "" {
+	if v := os.Getenv(constants.EnvSMTPHost); v != "" {
 		c.Mail.SMTPHost = v
 	}
-	if v := os.Getenv("SMTP_PORT"); v != "" {
+	if v := os.Getenv(constants.EnvSMTPPort); v != "" {
 		if port, err := strconv.Atoi(v); err == nil {
 			c.Mail.SMTPPort = port
 		}
 	}
-	if v := os.Getenv("SMTP_USERNAME"); v != "" {
+	if v := os.Getenv(constants.EnvSMTPUsername); v != "" {
 		c.Mail.SMTPUsername = v
 	}
-	if v := os.Getenv("SMTP_PASSWORD"); v != "" {
+	if v := os.Getenv(constants.EnvSMTPPassword); v != "" {
 		c.Mail.SMTPPassword = v
 	}
-	if v := os.Getenv("SMTP_FROM"); v != "" {
+	if v := os.Getenv(constants.EnvSMTPFrom); v != "" {
 		c.Mail.FromAddress = v
 	}
 }

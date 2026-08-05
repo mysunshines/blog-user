@@ -22,6 +22,7 @@ type UserRepository interface {
 	GetByUsername(ctx context.Context, username string) (*model.User, error)
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
 	Update(ctx context.Context, user *model.User) error
+	UpdateFields(ctx context.Context, id uint, cols map[string]interface{}) error
 	Delete(ctx context.Context, id uint) error
 
 	// 用户查询
@@ -92,9 +93,15 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*model.U
 	return &user, nil
 }
 
-// Update 更新用户
+// Update 更新用户（只更新非零值字段，不更新 created_at）
 func (r *userRepository) Update(ctx context.Context, user *model.User) error {
-	return r.db.WithContext(ctx).Save(user).Error
+	return r.db.WithContext(ctx).Updates(user).Error
+}
+
+// UpdateFields 精确更新用户指定列（用 map 可写入零值，如禁用 status=0）
+func (r *userRepository) UpdateFields(ctx context.Context, id uint, cols map[string]interface{}) error {
+	cols["updated_at"] = time.Now()
+	return r.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", id).Updates(cols).Error
 }
 
 // Delete 删除用户

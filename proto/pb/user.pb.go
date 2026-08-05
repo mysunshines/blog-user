@@ -1515,6 +1515,426 @@ func (x *IsBlacklistResponse) GetInBlacklist() bool {
 	return false
 }
 
+type OperationLog struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	OperatorId    uint32                 `protobuf:"varint,2,opt,name=operator_id,json=operatorId,proto3" json:"operator_id,omitempty"`
+	Operator      string                 `protobuf:"bytes,3,opt,name=operator,proto3" json:"operator,omitempty"`
+	Action        string                 `protobuf:"bytes,4,opt,name=action,proto3" json:"action,omitempty"`
+	TargetType    string                 `protobuf:"bytes,5,opt,name=target_type,json=targetType,proto3" json:"target_type,omitempty"`
+	TargetId      uint32                 `protobuf:"varint,6,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
+	TargetTitle   string                 `protobuf:"bytes,7,opt,name=target_title,json=targetTitle,proto3" json:"target_title,omitempty"`
+	Detail        string                 `protobuf:"bytes,8,opt,name=detail,proto3" json:"detail,omitempty"`
+	Ip            string                 `protobuf:"bytes,9,opt,name=ip,proto3" json:"ip,omitempty"`
+	CreatedAt     string                 `protobuf:"bytes,10,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OperationLog) Reset() {
+	*x = OperationLog{}
+	mi := &file_user_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OperationLog) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OperationLog) ProtoMessage() {}
+
+func (x *OperationLog) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OperationLog.ProtoReflect.Descriptor instead.
+func (*OperationLog) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *OperationLog) GetId() uint32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *OperationLog) GetOperatorId() uint32 {
+	if x != nil {
+		return x.OperatorId
+	}
+	return 0
+}
+
+func (x *OperationLog) GetOperator() string {
+	if x != nil {
+		return x.Operator
+	}
+	return ""
+}
+
+func (x *OperationLog) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *OperationLog) GetTargetType() string {
+	if x != nil {
+		return x.TargetType
+	}
+	return ""
+}
+
+func (x *OperationLog) GetTargetId() uint32 {
+	if x != nil {
+		return x.TargetId
+	}
+	return 0
+}
+
+func (x *OperationLog) GetTargetTitle() string {
+	if x != nil {
+		return x.TargetTitle
+	}
+	return ""
+}
+
+func (x *OperationLog) GetDetail() string {
+	if x != nil {
+		return x.Detail
+	}
+	return ""
+}
+
+func (x *OperationLog) GetIp() string {
+	if x != nil {
+		return x.Ip
+	}
+	return ""
+}
+
+func (x *OperationLog) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+type RecordLogRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OperatorId    uint32                 `protobuf:"varint,1,opt,name=operator_id,json=operatorId,proto3" json:"operator_id,omitempty"`
+	Operator      string                 `protobuf:"bytes,2,opt,name=operator,proto3" json:"operator,omitempty"`
+	Action        string                 `protobuf:"bytes,3,opt,name=action,proto3" json:"action,omitempty"`
+	TargetType    string                 `protobuf:"bytes,4,opt,name=target_type,json=targetType,proto3" json:"target_type,omitempty"`
+	TargetId      uint32                 `protobuf:"varint,5,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
+	TargetTitle   string                 `protobuf:"bytes,6,opt,name=target_title,json=targetTitle,proto3" json:"target_title,omitempty"`
+	Detail        string                 `protobuf:"bytes,7,opt,name=detail,proto3" json:"detail,omitempty"`
+	Ip            string                 `protobuf:"bytes,8,opt,name=ip,proto3" json:"ip,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RecordLogRequest) Reset() {
+	*x = RecordLogRequest{}
+	mi := &file_user_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecordLogRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecordLogRequest) ProtoMessage() {}
+
+func (x *RecordLogRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecordLogRequest.ProtoReflect.Descriptor instead.
+func (*RecordLogRequest) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *RecordLogRequest) GetOperatorId() uint32 {
+	if x != nil {
+		return x.OperatorId
+	}
+	return 0
+}
+
+func (x *RecordLogRequest) GetOperator() string {
+	if x != nil {
+		return x.Operator
+	}
+	return ""
+}
+
+func (x *RecordLogRequest) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *RecordLogRequest) GetTargetType() string {
+	if x != nil {
+		return x.TargetType
+	}
+	return ""
+}
+
+func (x *RecordLogRequest) GetTargetId() uint32 {
+	if x != nil {
+		return x.TargetId
+	}
+	return 0
+}
+
+func (x *RecordLogRequest) GetTargetTitle() string {
+	if x != nil {
+		return x.TargetTitle
+	}
+	return ""
+}
+
+func (x *RecordLogRequest) GetDetail() string {
+	if x != nil {
+		return x.Detail
+	}
+	return ""
+}
+
+func (x *RecordLogRequest) GetIp() string {
+	if x != nil {
+		return x.Ip
+	}
+	return ""
+}
+
+type RecordLogResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Code          uint32                 `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Id            uint32                 `protobuf:"varint,3,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RecordLogResponse) Reset() {
+	*x = RecordLogResponse{}
+	mi := &file_user_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecordLogResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecordLogResponse) ProtoMessage() {}
+
+func (x *RecordLogResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecordLogResponse.ProtoReflect.Descriptor instead.
+func (*RecordLogResponse) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *RecordLogResponse) GetCode() uint32 {
+	if x != nil {
+		return x.Code
+	}
+	return 0
+}
+
+func (x *RecordLogResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *RecordLogResponse) GetId() uint32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+type ListLogsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Page          uint32                 `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      uint32                 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	Action        string                 `protobuf:"bytes,3,opt,name=action,proto3" json:"action,omitempty"`
+	TargetType    string                 `protobuf:"bytes,4,opt,name=target_type,json=targetType,proto3" json:"target_type,omitempty"`
+	OperatorId    uint32                 `protobuf:"varint,5,opt,name=operator_id,json=operatorId,proto3" json:"operator_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListLogsRequest) Reset() {
+	*x = ListLogsRequest{}
+	mi := &file_user_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListLogsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListLogsRequest) ProtoMessage() {}
+
+func (x *ListLogsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListLogsRequest.ProtoReflect.Descriptor instead.
+func (*ListLogsRequest) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *ListLogsRequest) GetPage() uint32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListLogsRequest) GetPageSize() uint32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListLogsRequest) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *ListLogsRequest) GetTargetType() string {
+	if x != nil {
+		return x.TargetType
+	}
+	return ""
+}
+
+func (x *ListLogsRequest) GetOperatorId() uint32 {
+	if x != nil {
+		return x.OperatorId
+	}
+	return 0
+}
+
+type ListLogsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Code          uint32                 `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Logs          []*OperationLog        `protobuf:"bytes,3,rep,name=logs,proto3" json:"logs,omitempty"`
+	Total         uint32                 `protobuf:"varint,4,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListLogsResponse) Reset() {
+	*x = ListLogsResponse{}
+	mi := &file_user_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListLogsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListLogsResponse) ProtoMessage() {}
+
+func (x *ListLogsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListLogsResponse.ProtoReflect.Descriptor instead.
+func (*ListLogsResponse) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *ListLogsResponse) GetCode() uint32 {
+	if x != nil {
+		return x.Code
+	}
+	return 0
+}
+
+func (x *ListLogsResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *ListLogsResponse) GetLogs() []*OperationLog {
+	if x != nil {
+		return x.Logs
+	}
+	return nil
+}
+
+func (x *ListLogsResponse) GetTotal() uint32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
 var File_user_proto protoreflect.FileDescriptor
 
 const file_user_proto_rawDesc = "" +
@@ -1622,7 +2042,50 @@ const file_user_proto_rawDesc = "" +
 	"\x13IsBlacklistResponse\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\rR\x04code\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12!\n" +
-	"\fin_blacklist\x18\x03 \x01(\bR\vinBlacklist*\xa7\x02\n" +
+	"\fin_blacklist\x18\x03 \x01(\bR\vinBlacklist\"\x9b\x02\n" +
+	"\fOperationLog\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\rR\x02id\x12\x1f\n" +
+	"\voperator_id\x18\x02 \x01(\rR\n" +
+	"operatorId\x12\x1a\n" +
+	"\boperator\x18\x03 \x01(\tR\boperator\x12\x16\n" +
+	"\x06action\x18\x04 \x01(\tR\x06action\x12\x1f\n" +
+	"\vtarget_type\x18\x05 \x01(\tR\n" +
+	"targetType\x12\x1b\n" +
+	"\ttarget_id\x18\x06 \x01(\rR\btargetId\x12!\n" +
+	"\ftarget_title\x18\a \x01(\tR\vtargetTitle\x12\x16\n" +
+	"\x06detail\x18\b \x01(\tR\x06detail\x12\x0e\n" +
+	"\x02ip\x18\t \x01(\tR\x02ip\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\n" +
+	" \x01(\tR\tcreatedAt\"\xf0\x01\n" +
+	"\x10RecordLogRequest\x12\x1f\n" +
+	"\voperator_id\x18\x01 \x01(\rR\n" +
+	"operatorId\x12\x1a\n" +
+	"\boperator\x18\x02 \x01(\tR\boperator\x12\x16\n" +
+	"\x06action\x18\x03 \x01(\tR\x06action\x12\x1f\n" +
+	"\vtarget_type\x18\x04 \x01(\tR\n" +
+	"targetType\x12\x1b\n" +
+	"\ttarget_id\x18\x05 \x01(\rR\btargetId\x12!\n" +
+	"\ftarget_title\x18\x06 \x01(\tR\vtargetTitle\x12\x16\n" +
+	"\x06detail\x18\a \x01(\tR\x06detail\x12\x0e\n" +
+	"\x02ip\x18\b \x01(\tR\x02ip\"Q\n" +
+	"\x11RecordLogResponse\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\rR\x04code\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12\x0e\n" +
+	"\x02id\x18\x03 \x01(\rR\x02id\"\x9c\x01\n" +
+	"\x0fListLogsRequest\x12\x12\n" +
+	"\x04page\x18\x01 \x01(\rR\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\rR\bpageSize\x12\x16\n" +
+	"\x06action\x18\x03 \x01(\tR\x06action\x12\x1f\n" +
+	"\vtarget_type\x18\x04 \x01(\tR\n" +
+	"targetType\x12\x1f\n" +
+	"\voperator_id\x18\x05 \x01(\rR\n" +
+	"operatorId\"\x81\x01\n" +
+	"\x10ListLogsResponse\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\rR\x04code\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12)\n" +
+	"\x04logs\x18\x03 \x03(\v2\x15.user.v1.OperationLogR\x04logs\x12\x14\n" +
+	"\x05total\x18\x04 \x01(\rR\x05total*\xa7\x02\n" +
 	"\rUserErrorCode\x12\x10\n" +
 	"\fUSER_SUCCESS\x10\x00\x12\x19\n" +
 	"\x13USER_ALREADY_EXISTS\x10\xa1\x9c\x01\x12\x18\n" +
@@ -1649,7 +2112,10 @@ const file_user_proto_rawDesc = "" +
 	"\x0eChangePassword\x12\x1e.user.v1.ChangePasswordRequest\x1a\x1f.user.v1.ChangePasswordResponse\x12G\n" +
 	"\x0eAddToBlacklist\x12\x19.user.v1.BlacklistRequest\x1a\x1a.user.v1.BlacklistResponse\x12L\n" +
 	"\x13RemoveFromBlacklist\x12\x19.user.v1.BlacklistRequest\x1a\x1a.user.v1.BlacklistResponse\x12J\n" +
-	"\rIsInBlacklist\x12\x1b.user.v1.IsBlacklistRequest\x1a\x1c.user.v1.IsBlacklistResponseB+Z)github.com/mysunshines/blog-user/proto/pbb\x06proto3"
+	"\rIsInBlacklist\x12\x1b.user.v1.IsBlacklistRequest\x1a\x1c.user.v1.IsBlacklistResponse2\x93\x01\n" +
+	"\fAuditService\x12B\n" +
+	"\tRecordLog\x12\x19.user.v1.RecordLogRequest\x1a\x1a.user.v1.RecordLogResponse\x12?\n" +
+	"\bListLogs\x12\x18.user.v1.ListLogsRequest\x1a\x19.user.v1.ListLogsResponseB+Z)github.com/mysunshines/blog-user/proto/pbb\x06proto3"
 
 var (
 	file_user_proto_rawDescOnce sync.Once
@@ -1664,7 +2130,7 @@ func file_user_proto_rawDescGZIP() []byte {
 }
 
 var file_user_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_user_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_user_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
 var file_user_proto_goTypes = []any{
 	(UserErrorCode)(0),             // 0: user.v1.UserErrorCode
 	(*User)(nil),                   // 1: user.v1.User
@@ -1690,6 +2156,11 @@ var file_user_proto_goTypes = []any{
 	(*BlacklistResponse)(nil),      // 21: user.v1.BlacklistResponse
 	(*IsBlacklistRequest)(nil),     // 22: user.v1.IsBlacklistRequest
 	(*IsBlacklistResponse)(nil),    // 23: user.v1.IsBlacklistResponse
+	(*OperationLog)(nil),           // 24: user.v1.OperationLog
+	(*RecordLogRequest)(nil),       // 25: user.v1.RecordLogRequest
+	(*RecordLogResponse)(nil),      // 26: user.v1.RecordLogResponse
+	(*ListLogsRequest)(nil),        // 27: user.v1.ListLogsRequest
+	(*ListLogsResponse)(nil),       // 28: user.v1.ListLogsResponse
 }
 var file_user_proto_depIdxs = []int32{
 	1,  // 0: user.v1.RegisterResponse.user:type_name -> user.v1.User
@@ -1697,35 +2168,40 @@ var file_user_proto_depIdxs = []int32{
 	1,  // 2: user.v1.GetUserResponse.user:type_name -> user.v1.User
 	1,  // 3: user.v1.UpdateUserResponse.user:type_name -> user.v1.User
 	1,  // 4: user.v1.GetUsersResponse.users:type_name -> user.v1.User
-	2,  // 5: user.v1.UserService.Register:input_type -> user.v1.RegisterRequest
-	4,  // 6: user.v1.UserService.Login:input_type -> user.v1.LoginRequest
-	6,  // 7: user.v1.UserService.Logout:input_type -> user.v1.LogoutRequest
-	8,  // 8: user.v1.UserService.GetUser:input_type -> user.v1.GetUserRequest
-	10, // 9: user.v1.UserService.ValidateToken:input_type -> user.v1.ValidateTokenRequest
-	12, // 10: user.v1.UserService.UpdateUser:input_type -> user.v1.UpdateUserRequest
-	14, // 11: user.v1.UserService.DeleteUser:input_type -> user.v1.DeleteUserRequest
-	16, // 12: user.v1.UserService.GetUsers:input_type -> user.v1.GetUsersRequest
-	18, // 13: user.v1.UserService.ChangePassword:input_type -> user.v1.ChangePasswordRequest
-	20, // 14: user.v1.UserService.AddToBlacklist:input_type -> user.v1.BlacklistRequest
-	20, // 15: user.v1.UserService.RemoveFromBlacklist:input_type -> user.v1.BlacklistRequest
-	22, // 16: user.v1.UserService.IsInBlacklist:input_type -> user.v1.IsBlacklistRequest
-	3,  // 17: user.v1.UserService.Register:output_type -> user.v1.RegisterResponse
-	5,  // 18: user.v1.UserService.Login:output_type -> user.v1.LoginResponse
-	7,  // 19: user.v1.UserService.Logout:output_type -> user.v1.LogoutResponse
-	9,  // 20: user.v1.UserService.GetUser:output_type -> user.v1.GetUserResponse
-	11, // 21: user.v1.UserService.ValidateToken:output_type -> user.v1.ValidateTokenResponse
-	13, // 22: user.v1.UserService.UpdateUser:output_type -> user.v1.UpdateUserResponse
-	15, // 23: user.v1.UserService.DeleteUser:output_type -> user.v1.DeleteUserResponse
-	17, // 24: user.v1.UserService.GetUsers:output_type -> user.v1.GetUsersResponse
-	19, // 25: user.v1.UserService.ChangePassword:output_type -> user.v1.ChangePasswordResponse
-	21, // 26: user.v1.UserService.AddToBlacklist:output_type -> user.v1.BlacklistResponse
-	21, // 27: user.v1.UserService.RemoveFromBlacklist:output_type -> user.v1.BlacklistResponse
-	23, // 28: user.v1.UserService.IsInBlacklist:output_type -> user.v1.IsBlacklistResponse
-	17, // [17:29] is the sub-list for method output_type
-	5,  // [5:17] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	24, // 5: user.v1.ListLogsResponse.logs:type_name -> user.v1.OperationLog
+	2,  // 6: user.v1.UserService.Register:input_type -> user.v1.RegisterRequest
+	4,  // 7: user.v1.UserService.Login:input_type -> user.v1.LoginRequest
+	6,  // 8: user.v1.UserService.Logout:input_type -> user.v1.LogoutRequest
+	8,  // 9: user.v1.UserService.GetUser:input_type -> user.v1.GetUserRequest
+	10, // 10: user.v1.UserService.ValidateToken:input_type -> user.v1.ValidateTokenRequest
+	12, // 11: user.v1.UserService.UpdateUser:input_type -> user.v1.UpdateUserRequest
+	14, // 12: user.v1.UserService.DeleteUser:input_type -> user.v1.DeleteUserRequest
+	16, // 13: user.v1.UserService.GetUsers:input_type -> user.v1.GetUsersRequest
+	18, // 14: user.v1.UserService.ChangePassword:input_type -> user.v1.ChangePasswordRequest
+	20, // 15: user.v1.UserService.AddToBlacklist:input_type -> user.v1.BlacklistRequest
+	20, // 16: user.v1.UserService.RemoveFromBlacklist:input_type -> user.v1.BlacklistRequest
+	22, // 17: user.v1.UserService.IsInBlacklist:input_type -> user.v1.IsBlacklistRequest
+	25, // 18: user.v1.AuditService.RecordLog:input_type -> user.v1.RecordLogRequest
+	27, // 19: user.v1.AuditService.ListLogs:input_type -> user.v1.ListLogsRequest
+	3,  // 20: user.v1.UserService.Register:output_type -> user.v1.RegisterResponse
+	5,  // 21: user.v1.UserService.Login:output_type -> user.v1.LoginResponse
+	7,  // 22: user.v1.UserService.Logout:output_type -> user.v1.LogoutResponse
+	9,  // 23: user.v1.UserService.GetUser:output_type -> user.v1.GetUserResponse
+	11, // 24: user.v1.UserService.ValidateToken:output_type -> user.v1.ValidateTokenResponse
+	13, // 25: user.v1.UserService.UpdateUser:output_type -> user.v1.UpdateUserResponse
+	15, // 26: user.v1.UserService.DeleteUser:output_type -> user.v1.DeleteUserResponse
+	17, // 27: user.v1.UserService.GetUsers:output_type -> user.v1.GetUsersResponse
+	19, // 28: user.v1.UserService.ChangePassword:output_type -> user.v1.ChangePasswordResponse
+	21, // 29: user.v1.UserService.AddToBlacklist:output_type -> user.v1.BlacklistResponse
+	21, // 30: user.v1.UserService.RemoveFromBlacklist:output_type -> user.v1.BlacklistResponse
+	23, // 31: user.v1.UserService.IsInBlacklist:output_type -> user.v1.IsBlacklistResponse
+	26, // 32: user.v1.AuditService.RecordLog:output_type -> user.v1.RecordLogResponse
+	28, // 33: user.v1.AuditService.ListLogs:output_type -> user.v1.ListLogsResponse
+	20, // [20:34] is the sub-list for method output_type
+	6,  // [6:20] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_user_proto_init() }
@@ -1739,9 +2215,9 @@ func file_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_proto_rawDesc), len(file_user_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   23,
+			NumMessages:   28,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   2,
 		},
 		GoTypes:           file_user_proto_goTypes,
 		DependencyIndexes: file_user_proto_depIdxs,

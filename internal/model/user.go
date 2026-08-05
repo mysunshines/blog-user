@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/mysunshines/gocommon/constants"
+	"gorm.io/gorm"
 )
 
 // User 用户模型
@@ -17,8 +18,9 @@ type User struct {
 	Bio       string    `gorm:"size:512" json:"bio"`
 	Role      uint8     `gorm:"default:1" json:"role"`   // 1: 普通用户 2: 管理员
 	Status    uint8     `gorm:"default:1" json:"status"` // 1: 正常 0: 禁用
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt time.Time  `gorm:"<-:create" json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 func (User) TableName() string {

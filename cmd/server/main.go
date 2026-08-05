@@ -18,6 +18,7 @@ import (
 	user "github.com/mysunshines/blog-user/proto/pb"
 
 	"github.com/mysunshines/gocommon/cache"
+	"github.com/mysunshines/gocommon/configcenter"
 	"github.com/mysunshines/gocommon/constants"
 	common_database "github.com/mysunshines/gocommon/database"
 	"github.com/mysunshines/gocommon/log"
@@ -43,9 +44,9 @@ type Server struct {
 	grpcServer    *grpc.Server
 	userSvc       service.UserService
 	userRepo      repository.UserRepository
-	tokenRepo     repository.TokenRepository
 	blacklistRepo repository.BlacklistRepository
 	userHandl     *v1.UserHandler
+	auditHandl    *v1.AuditHandler
 	db            *gorm.DB
 	cb            *gobreaker.CircuitBreaker
 }
@@ -79,26 +80,26 @@ func NewServer(cfg *config.Config) *Server {
 	})
 
 	// 自动迁移（分布式锁保护，多实例只有一个执行）
-	runDBMigration(db, "migration:lock:user_service", &model.User{}, &model.Token{}, &model.UserBlacklist{})
+	runDBMigration(db, "migration:lock:user_service", &model.User{}, &model.Token{}, &model.UserBlacklist{}, &model.OperationLog{})
 
 	// 初始化仓储层
 	userRepo := repository.NewUserRepository(db)
-	tokenRepo := repository.NewTokenRepository(db)
 	blacklistRepo := repository.NewBlacklistRepository(db)
 
 	// 初始化服务层
 	userSvc := service.NewUserService(userRepo, cfg)
 
 	// 初始化处理器
-	userHandl := v1.NewUserHandler(userSvc)
+	userHandl := v1.NewUserHandler(userSvc, db)
+	auditHandl := v1.NewAuditHandler(db)
 
 	return &Server{
 		cfg:           cfg,
 		userSvc:       userSvc,
 		userRepo:      userRepo,
-		tokenRepo:     tokenRepo,
 		blacklistRepo: blacklistRepo,
 		userHandl:     userHandl,
+		auditHandl:    auditHandl,
 		db:            db,
 		cb:            cb,
 	}
@@ -213,19 +214,20 @@ func (s *Server) runHTTPServer() {
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(commonmiddleware.RecoveryMiddleware())
+	// TraceMiddleware 必须在 LoggingMiddleware 之前，确保访问日志能取到 X-Trace-ID
+	router.Use(commonmiddleware.TraceMiddleware())
 	router.Use(commonmiddleware.LoggingMiddleware())
 	router.Use(commonmiddleware.CORSMiddleware())
 	// 限制请求体大小，防大请求体 DoS
 	router.Use(commonmiddleware.ValidateRequestMiddleware())
 	router.Use(commonmiddleware.CSRFMiddleware())
 	router.Use(commonmiddleware.MetricsMiddleware(constants.ServiceNameUser))
-	router.Use(commonmiddleware.TraceMiddleware())
 
 	// 限流中间件
 	router.Use(commonmiddleware.RateLimitMiddleware())
 
 	// 健康检查（带深度检查）
-	router.GET("/health", func(c *gin.Context) {
+	router.GET(constants.HealthCheckPath, func(c *gin.Context) {
 		// 检查数据库连接
 		if sqlDB, _ := s.db.DB(); sqlDB != nil {
 			if err := sqlDB.Ping(); err != nil {
@@ -244,7 +246,7 @@ func (s *Server) runHTTPServer() {
 	})
 
 	// 就绪探针
-	router.GET("/ready", func(c *gin.Context) {
+	router.GET(constants.ReadinessPath, func(c *gin.Context) {
 		sqlDB, _ := s.db.DB()
 		if sqlDB == nil {
 			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "db not ready"})
@@ -258,7 +260,7 @@ func (s *Server) runHTTPServer() {
 	})
 
 	// 版本信息
-	router.GET("/version", func(c *gin.Context) {
+	router.GET(constants.VersionPath, func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"version": Version})
 	})
 
@@ -267,39 +269,28 @@ func (s *Server) runHTTPServer() {
 	{
 		userGroup := api.Group("/user")
 		{
-			// 公开接口
+			// 仅保留无 gRPC 等价方法的 HTTP 端点：
+			//   register  — 需要 verify_code 字段（proto RegisterRequest 不含此字段）
+			//   send-code — 发送验证码（proto 无该方法）
+			// 其余接口（login/logout/get_user 等）已迁移至 gRPC，经 Gateway 代理访问。
 			userGroup.POST("/register", s.userHandl.Register)
 			userGroup.POST("/send-code", s.userHandl.SendVerificationCode)
-			userGroup.POST("/login", s.userHandl.Login)
-			userGroup.POST("/validate", s.userHandl.ValidateToken)
-
-			// 需要认证的接口
-		authGroup := userGroup.Group("")
-		authGroup.Use(commonmiddleware.JWTValidMiddleware(), commonmiddleware.ContextMiddleware())
-			{
-				authGroup.POST("/logout", s.userHandl.Logout)
-				authGroup.GET("", s.userHandl.GetUser)
-				authGroup.PUT("", s.userHandl.UpdateUser)
-				authGroup.DELETE("/:id", s.userHandl.DeleteUser)
-				authGroup.POST("/password", s.userHandl.ChangePassword)
-				authGroup.POST("/blacklist", s.userHandl.AddToBlacklist)
-				authGroup.DELETE("/blacklist", s.userHandl.RemoveFromBlacklist)
-			}
-
-			// 公开查询接口
-			userGroup.GET("/blacklist/check", s.userHandl.IsInBlacklist)
 		}
 
-		// 用户列表（需要认证）
-		api.GET("/users", commonmiddleware.JWTValidMiddleware(), commonmiddleware.ContextMiddleware(), s.userHandl.GetUsers)
-
-		// 管理员接口（需要认证 + 管理员角色）
-		adminGroup := api.Group("/admin/users")
+		// 管理员接口（需要认证 + 管理员角色），由 Gateway DynamicAdminProxy 透传。
+		//
+		// URL 约定：
+		//   前端:  /admin-api/user/list
+		//   Nginx: /admin-api/user/list → Gateway
+		//   Gateway: deriveServiceName("user") → user-service
+		//   Gateway: 重写路径 → /api/v1/admin/user/list → HTTP 反向代理到此处
+		adminGroup := api.Group("/admin/user")
 		adminGroup.Use(commonmiddleware.JWTValidMiddleware(), commonmiddleware.ContextMiddleware(), commonmiddleware.AdminOnlyMiddleware())
 		{
 			adminGroup.GET("", s.userHandl.AdminGetUsers)
 			adminGroup.PUT("/:id", s.userHandl.AdminUpdateUser)
 			adminGroup.DELETE("/:id", s.userHandl.DeleteUser)
+			adminGroup.GET("/operation-logs", s.auditHandl.List)
 		}
 	}
 
@@ -347,6 +338,7 @@ func (s *Server) runGRPCServer() {
 		Svc: s.userSvc,
 		Cb:  s.cb,
 	})
+	user.RegisterAuditServiceServer(s.grpcServer, v1.NewGrpcAuditHandler(s.db))
 	reflection.Register(s.grpcServer)
 
 	log.Infof("gRPC server starting on %s", s.cfg.GRPC.Addr())
@@ -385,6 +377,16 @@ func main() {
 
 	log.Init(cfg.App.LogDir, cfg.App.LogLevel, constants.ServiceNameUser)
 	metrics.Init()
+
+	// 配置中心：从 Consul KV 拉取热更配置（限流阈值/日志级别等），缺失时降级到默认值。
+	hotCfg := configcenter.Init(cfg.Consul.Address, cfg.App.Name, cfg.App.Env)
+	if err := hotCfg.Load(); err != nil && err != configcenter.ErrNotFound {
+		log.Warnf("load hot config failed: %v", err)
+	}
+	// 配置中心热更（日志级别/限流阈值/JWT时效）由 configcenter.apply 自动生效，
+	// 其中限流器实例刷新已在 apply 内调用 middleware.UpdateRateLimiter 完成，无需额外回调。
+	go hotCfg.Watch()
+	defer hotCfg.Stop()
 
 	server := NewServer(cfg)
 
