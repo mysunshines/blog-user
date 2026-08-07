@@ -15,11 +15,9 @@ import (
 	"gorm.io/gorm"
 )
 
-// GrpcUserHandler gRPC 用户处理器，同时承载 UserService 与 AuditService
-// （操作日志汇聚服务），二者均属 user 域，统一放在此处而非拆分独立 struct。
+// GrpcUserHandler gRPC 用户处理器，承载 UserService（含操作审计 RecordLog/ListLogs）。
 type GrpcUserHandler struct {
 	user.UnimplementedUserServiceServer
-	user.UnimplementedAuditServiceServer
 	Svc service.UserService
 	Cb  *gobreaker.CircuitBreaker
 	DB  *gorm.DB
@@ -304,7 +302,7 @@ func ConvertToProtoUser(u *model.UserResponse) *user.User {
 	}
 }
 
-// RecordLog 实现 user.v1.AuditService，作为各业务服务上报操作日志的汇聚点。
+// RecordLog 实现 user.v1.UserService，作为各业务服务上报操作日志的汇聚点。
 // article-service / comment-service 等通过 gRPC 调用此接口写入 operation_logs。
 func (h *GrpcUserHandler) RecordLog(ctx context.Context, req *user.RecordLogRequest) (*user.RecordLogResponse, error) {
 	log := &model.OperationLog{
@@ -330,7 +328,7 @@ func (h *GrpcUserHandler) RecordLog(ctx context.Context, req *user.RecordLogRequ
 	}, nil
 }
 
-// ListLogs 实现 user.v1.AuditService，供本服务管理端查询操作日志。
+// ListLogs 实现 user.v1.UserService，供本服务管理端查询操作日志。
 func (h *GrpcUserHandler) ListLogs(ctx context.Context, req *user.ListLogsRequest) (*user.ListLogsResponse, error) {
 	logs, total, err := audit.List(ctx, h.DB, int(req.Page), int(req.PageSize), req.Action, req.TargetType, uint(req.OperatorId))
 	if err != nil {

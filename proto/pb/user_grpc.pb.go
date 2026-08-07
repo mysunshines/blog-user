@@ -31,6 +31,8 @@ const (
 	UserService_AddToBlacklist_FullMethodName      = "/user.v1.UserService/AddToBlacklist"
 	UserService_RemoveFromBlacklist_FullMethodName = "/user.v1.UserService/RemoveFromBlacklist"
 	UserService_IsInBlacklist_FullMethodName       = "/user.v1.UserService/IsInBlacklist"
+	UserService_RecordLog_FullMethodName           = "/user.v1.UserService/RecordLog"
+	UserService_ListLogs_FullMethodName            = "/user.v1.UserService/ListLogs"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -49,6 +51,9 @@ type UserServiceClient interface {
 	AddToBlacklist(ctx context.Context, in *BlacklistRequest, opts ...grpc.CallOption) (*BlacklistResponse, error)
 	RemoveFromBlacklist(ctx context.Context, in *BlacklistRequest, opts ...grpc.CallOption) (*BlacklistResponse, error)
 	IsInBlacklist(ctx context.Context, in *IsBlacklistRequest, opts ...grpc.CallOption) (*IsBlacklistResponse, error)
+	// 操作审计：作为 UserService 的普通 RPC，不再独立成 AuditService
+	RecordLog(ctx context.Context, in *RecordLogRequest, opts ...grpc.CallOption) (*RecordLogResponse, error)
+	ListLogs(ctx context.Context, in *ListLogsRequest, opts ...grpc.CallOption) (*ListLogsResponse, error)
 }
 
 type userServiceClient struct {
@@ -179,6 +184,26 @@ func (c *userServiceClient) IsInBlacklist(ctx context.Context, in *IsBlacklistRe
 	return out, nil
 }
 
+func (c *userServiceClient) RecordLog(ctx context.Context, in *RecordLogRequest, opts ...grpc.CallOption) (*RecordLogResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RecordLogResponse)
+	err := c.cc.Invoke(ctx, UserService_RecordLog_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ListLogs(ctx context.Context, in *ListLogsRequest, opts ...grpc.CallOption) (*ListLogsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListLogsResponse)
+	err := c.cc.Invoke(ctx, UserService_ListLogs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -195,6 +220,9 @@ type UserServiceServer interface {
 	AddToBlacklist(context.Context, *BlacklistRequest) (*BlacklistResponse, error)
 	RemoveFromBlacklist(context.Context, *BlacklistRequest) (*BlacklistResponse, error)
 	IsInBlacklist(context.Context, *IsBlacklistRequest) (*IsBlacklistResponse, error)
+	// 操作审计：作为 UserService 的普通 RPC，不再独立成 AuditService
+	RecordLog(context.Context, *RecordLogRequest) (*RecordLogResponse, error)
+	ListLogs(context.Context, *ListLogsRequest) (*ListLogsResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -240,6 +268,12 @@ func (UnimplementedUserServiceServer) RemoveFromBlacklist(context.Context, *Blac
 }
 func (UnimplementedUserServiceServer) IsInBlacklist(context.Context, *IsBlacklistRequest) (*IsBlacklistResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method IsInBlacklist not implemented")
+}
+func (UnimplementedUserServiceServer) RecordLog(context.Context, *RecordLogRequest) (*RecordLogResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecordLog not implemented")
+}
+func (UnimplementedUserServiceServer) ListLogs(context.Context, *ListLogsRequest) (*ListLogsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListLogs not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -478,6 +512,42 @@ func _UserService_IsInBlacklist_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_RecordLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordLogRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).RecordLog(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_RecordLog_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).RecordLog(ctx, req.(*RecordLogRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ListLogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListLogsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ListLogs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ListLogs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ListLogs(ctx, req.(*ListLogsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -533,151 +603,13 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "IsInBlacklist",
 			Handler:    _UserService_IsInBlacklist_Handler,
 		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "user.proto",
-}
-
-const (
-	AuditService_RecordLog_FullMethodName = "/user.v1.AuditService/RecordLog"
-	AuditService_ListLogs_FullMethodName  = "/user.v1.AuditService/ListLogs"
-)
-
-// AuditServiceClient is the client API for AuditService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// AuditService 操作日志服务：由各业务服务通过 gRPC 上报操作记录，
-// user-service 作为日志归属方统一落库，并对外提供管理端查询接口。
-type AuditServiceClient interface {
-	RecordLog(ctx context.Context, in *RecordLogRequest, opts ...grpc.CallOption) (*RecordLogResponse, error)
-	ListLogs(ctx context.Context, in *ListLogsRequest, opts ...grpc.CallOption) (*ListLogsResponse, error)
-}
-
-type auditServiceClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewAuditServiceClient(cc grpc.ClientConnInterface) AuditServiceClient {
-	return &auditServiceClient{cc}
-}
-
-func (c *auditServiceClient) RecordLog(ctx context.Context, in *RecordLogRequest, opts ...grpc.CallOption) (*RecordLogResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RecordLogResponse)
-	err := c.cc.Invoke(ctx, AuditService_RecordLog_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *auditServiceClient) ListLogs(ctx context.Context, in *ListLogsRequest, opts ...grpc.CallOption) (*ListLogsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListLogsResponse)
-	err := c.cc.Invoke(ctx, AuditService_ListLogs_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// AuditServiceServer is the server API for AuditService service.
-// All implementations must embed UnimplementedAuditServiceServer
-// for forward compatibility.
-//
-// AuditService 操作日志服务：由各业务服务通过 gRPC 上报操作记录，
-// user-service 作为日志归属方统一落库，并对外提供管理端查询接口。
-type AuditServiceServer interface {
-	RecordLog(context.Context, *RecordLogRequest) (*RecordLogResponse, error)
-	ListLogs(context.Context, *ListLogsRequest) (*ListLogsResponse, error)
-	mustEmbedUnimplementedAuditServiceServer()
-}
-
-// UnimplementedAuditServiceServer must be embedded to have
-// forward compatible implementations.
-//
-// NOTE: this should be embedded by value instead of pointer to avoid a nil
-// pointer dereference when methods are called.
-type UnimplementedAuditServiceServer struct{}
-
-func (UnimplementedAuditServiceServer) RecordLog(context.Context, *RecordLogRequest) (*RecordLogResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method RecordLog not implemented")
-}
-func (UnimplementedAuditServiceServer) ListLogs(context.Context, *ListLogsRequest) (*ListLogsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListLogs not implemented")
-}
-func (UnimplementedAuditServiceServer) mustEmbedUnimplementedAuditServiceServer() {}
-func (UnimplementedAuditServiceServer) testEmbeddedByValue()                      {}
-
-// UnsafeAuditServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to AuditServiceServer will
-// result in compilation errors.
-type UnsafeAuditServiceServer interface {
-	mustEmbedUnimplementedAuditServiceServer()
-}
-
-func RegisterAuditServiceServer(s grpc.ServiceRegistrar, srv AuditServiceServer) {
-	// If the following call panics, it indicates UnimplementedAuditServiceServer was
-	// embedded by pointer and is nil.  This will cause panics if an
-	// unimplemented method is ever invoked, so we test this at initialization
-	// time to prevent it from happening at runtime later due to I/O.
-	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
-		t.testEmbeddedByValue()
-	}
-	s.RegisterService(&AuditService_ServiceDesc, srv)
-}
-
-func _AuditService_RecordLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RecordLogRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuditServiceServer).RecordLog(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuditService_RecordLog_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuditServiceServer).RecordLog(ctx, req.(*RecordLogRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AuditService_ListLogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListLogsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuditServiceServer).ListLogs(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuditService_ListLogs_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuditServiceServer).ListLogs(ctx, req.(*ListLogsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// AuditService_ServiceDesc is the grpc.ServiceDesc for AuditService service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var AuditService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "user.v1.AuditService",
-	HandlerType: (*AuditServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "RecordLog",
-			Handler:    _AuditService_RecordLog_Handler,
+			Handler:    _UserService_RecordLog_Handler,
 		},
 		{
 			MethodName: "ListLogs",
-			Handler:    _AuditService_ListLogs_Handler,
+			Handler:    _UserService_ListLogs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

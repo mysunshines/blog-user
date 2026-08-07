@@ -262,17 +262,29 @@ func (s *Server) runHTTPServer() {
 		c.JSON(http.StatusOK, gin.H{"version": Version})
 	})
 
+	// 静态托管上传的头像图片（图片 URL 由上传接口直接返回）。
+	// 静态托管上传的头像图片（图片 URL 由上传接口直接返回）。
+	// 路径与 handler/v1.UserUploadsBaseURL 共用，契约见 proto/user.proto。
+	router.Static(v1.UserUploadsBaseURL, v1.UploadsDir)
+
 	// API 路由
 	api := router.Group(constants.APIPathPrefix)
 	{
-		userGroup := api.Group("/user")
+		userGroup := api.Group(v1.UserGroup)
 		{
-			// 仅保留无 gRPC 等价方法的 HTTP 端点：
+			// 公开端点（无鉴权）：
 			//   register  — 需要 verify_code 字段（proto RegisterRequest 不含此字段）
 			//   send-code — 发送验证码（proto 无该方法）
 			// 其余接口（login/logout/get_user 等）已迁移至 gRPC，经 Gateway 代理访问。
-			userGroup.POST("/register", s.userHandl.Register)
-			userGroup.POST("/send-code", s.userHandl.SendVerificationCode)
+			userGroup.POST(v1.UserRegisterPath, s.userHandl.Register)
+			userGroup.POST(v1.UserSendCodePath, s.userHandl.SendVerificationCode)
+		}
+
+		// 需登录的用户端点：头像上传（multipart 文件上传，不适合走 gRPC）。
+		authUserGroup := api.Group(v1.UserGroup)
+		authUserGroup.Use(commonmiddleware.JWTValidMiddleware(), commonmiddleware.ContextMiddleware())
+		{
+			authUserGroup.POST(v1.UserAvatarPath, s.userHandl.UploadAvatar)
 		}
 
 		// 管理员接口（需要认证 + 管理员角色），由 Gateway DynamicAdminProxy 透传。
@@ -282,7 +294,7 @@ func (s *Server) runHTTPServer() {
 		//   Nginx: /admin-api/user/list → Gateway
 		//   Gateway: deriveServiceName("user") → user-service
 		//   Gateway: 重写路径 → /api/v1/admin/user/list → HTTP 反向代理到此处
-		adminGroup := api.Group("/admin/user")
+		adminGroup := api.Group(v1.UserAdminGroup)
 		adminGroup.Use(commonmiddleware.JWTValidMiddleware(), commonmiddleware.ContextMiddleware(), commonmiddleware.AdminOnlyMiddleware())
 		{
 			adminGroup.GET("", s.userHandl.AdminGetUsers)
@@ -338,7 +350,6 @@ func (s *Server) runGRPCServer() {
 		DB:  s.db,
 	}
 	user.RegisterUserServiceServer(s.grpcServer, userHandler)
-	user.RegisterAuditServiceServer(s.grpcServer, userHandler)
 	reflection.Register(s.grpcServer)
 
 	log.Infof("gRPC server starting on %s", s.cfg.GRPC.Addr())

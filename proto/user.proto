@@ -4,6 +4,35 @@ package user.v1;
 
 option go_package = "github.com/mysunshines/blog-user/proto/pb";
 
+// ============================================================================
+// HTTP API Contract (source of truth for user-service HTTP routes)
+// ----------------------------------------------------------------------------
+// 路径前缀：APIPathPrefix = /api/v1
+// 鉴权约定：
+//   - "登录"    = 需 JWT (Authorization: Bearer)
+//   - "管理员"  = 需 JWT + 管理员角色
+//   - "公开"    = 无需鉴权
+// 备注：
+//   - 下列 HTTP 端点与 gRPC service 分离（未启用 grpc-gateway），
+//     HTTP 由 gin 手写注册，gRPC 由 Gateway 代理。
+//   - 文件上传（multipart）不适合 gRPC，故 /avatar、/register、/send-code
+//     仅以 HTTP 形式存在，proto 的 UserService 不含这些方法。
+// ----------------------------------------------------------------------------
+// METHOD  PATH                          AUTH        说明                        Go 常量(handler/v1)
+// POST    /api/v1/user/register         公开         注册（含 verify_code 字段，proto 无对应）   UserGroup + UserRegisterPath
+// POST    /api/v1/user/send-code        公开         发送验证码（proto 无对应方法）            UserGroup + UserSendCodePath
+// POST    /api/v1/user/avatar           登录         头像上传（multipart field=file）         UserGroup + UserAvatarPath
+// GET     /api/v1/user/uploads/*        公开(静态)   头像图片静态托管                     UserUploadsBaseURL
+// GET     /api/v1/admin/user            管理员       用户列表                          UserAdminGroup
+// PUT     /api/v1/admin/user/:id        管理员       更新用户                          UserAdminGroup
+// DELETE  /api/v1/admin/user/:id        管理员       删除用户                          UserAdminGroup
+// GET     /api/v1/admin/user/operation-logs  管理员   操作日志列表                        UserAdminGroup
+// ----------------------------------------------------------------------------
+// 路径常量统一定义在 internal/handler/v1/routes.go，main.go 与各 handler 均引用，
+// 请勿在 proto 注释之外的 Go 代码中硬编码以下路径字符串。
+// ============================================================================
+
+
 // 错误码定义 (区间: 20000-29999)
 enum UserErrorCode {
     USER_SUCCESS = 0;
@@ -32,6 +61,9 @@ service UserService {
     rpc AddToBlacklist(BlacklistRequest) returns (BlacklistResponse);
     rpc RemoveFromBlacklist(BlacklistRequest) returns (BlacklistResponse);
     rpc IsInBlacklist(IsBlacklistRequest) returns (IsBlacklistResponse);
+    // 操作审计：作为 UserService 的普通 RPC，不再独立成 AuditService
+    rpc RecordLog(RecordLogRequest) returns (RecordLogResponse);
+    rpc ListLogs(ListLogsRequest) returns (ListLogsResponse);
 }
 
 message User {
@@ -260,7 +292,6 @@ message ListLogsResponse {
 
 // AuditService 操作日志服务：由各业务服务通过 gRPC 上报操作记录，
 // user-service 作为日志归属方统一落库，并对外提供管理端查询接口。
-service AuditService {
-    rpc RecordLog(RecordLogRequest) returns (RecordLogResponse);
-    rpc ListLogs(ListLogsRequest) returns (ListLogsResponse);
-}
+// 说明：自重构后 RecordLog/ListLogs 已并入 UserService（见上方 service UserService），
+// 不再以独立 service 形式存在。
+

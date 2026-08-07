@@ -2245,7 +2245,7 @@ const file_user_proto_rawDesc = "" +
 	"!AUDIT_ACTION_ARTICLE_SET_CATEGORY\x10\x1c\x12 \n" +
 	"\x1cAUDIT_ACTION_CATEGORY_CREATE\x10\x1e\x12 \n" +
 	"\x1cAUDIT_ACTION_CATEGORY_UPDATE\x10\x1f\x12 \n" +
-	"\x1cAUDIT_ACTION_CATEGORY_DELETE\x10 2\xd4\x06\n" +
+	"\x1cAUDIT_ACTION_CATEGORY_DELETE\x10 2\xd9\a\n" +
 	"\vUserService\x12?\n" +
 	"\bRegister\x12\x18.user.v1.RegisterRequest\x1a\x19.user.v1.RegisterResponse\x126\n" +
 	"\x05Login\x12\x15.user.v1.LoginRequest\x1a\x16.user.v1.LoginResponse\x129\n" +
@@ -2260,8 +2260,7 @@ const file_user_proto_rawDesc = "" +
 	"\x0eChangePassword\x12\x1e.user.v1.ChangePasswordRequest\x1a\x1f.user.v1.ChangePasswordResponse\x12G\n" +
 	"\x0eAddToBlacklist\x12\x19.user.v1.BlacklistRequest\x1a\x1a.user.v1.BlacklistResponse\x12L\n" +
 	"\x13RemoveFromBlacklist\x12\x19.user.v1.BlacklistRequest\x1a\x1a.user.v1.BlacklistResponse\x12J\n" +
-	"\rIsInBlacklist\x12\x1b.user.v1.IsBlacklistRequest\x1a\x1c.user.v1.IsBlacklistResponse2\x93\x01\n" +
-	"\fAuditService\x12B\n" +
+	"\rIsInBlacklist\x12\x1b.user.v1.IsBlacklistRequest\x1a\x1c.user.v1.IsBlacklistResponse\x12B\n" +
 	"\tRecordLog\x12\x19.user.v1.RecordLogRequest\x1a\x1a.user.v1.RecordLogResponse\x12?\n" +
 	"\bListLogs\x12\x18.user.v1.ListLogsRequest\x1a\x19.user.v1.ListLogsResponseB+Z)github.com/mysunshines/blog-user/proto/pbb\x06proto3"
 
@@ -2331,8 +2330,8 @@ var file_user_proto_depIdxs = []int32{
 	21, // 16: user.v1.UserService.AddToBlacklist:input_type -> user.v1.BlacklistRequest
 	21, // 17: user.v1.UserService.RemoveFromBlacklist:input_type -> user.v1.BlacklistRequest
 	23, // 18: user.v1.UserService.IsInBlacklist:input_type -> user.v1.IsBlacklistRequest
-	26, // 19: user.v1.AuditService.RecordLog:input_type -> user.v1.RecordLogRequest
-	28, // 20: user.v1.AuditService.ListLogs:input_type -> user.v1.ListLogsRequest
+	26, // 19: user.v1.UserService.RecordLog:input_type -> user.v1.RecordLogRequest
+	28, // 20: user.v1.UserService.ListLogs:input_type -> user.v1.ListLogsRequest
 	4,  // 21: user.v1.UserService.Register:output_type -> user.v1.RegisterResponse
 	6,  // 22: user.v1.UserService.Login:output_type -> user.v1.LoginResponse
 	8,  // 23: user.v1.UserService.Logout:output_type -> user.v1.LogoutResponse
@@ -2345,8 +2344,8 @@ var file_user_proto_depIdxs = []int32{
 	22, // 30: user.v1.UserService.AddToBlacklist:output_type -> user.v1.BlacklistResponse
 	22, // 31: user.v1.UserService.RemoveFromBlacklist:output_type -> user.v1.BlacklistResponse
 	24, // 32: user.v1.UserService.IsInBlacklist:output_type -> user.v1.IsBlacklistResponse
-	27, // 33: user.v1.AuditService.RecordLog:output_type -> user.v1.RecordLogResponse
-	29, // 34: user.v1.AuditService.ListLogs:output_type -> user.v1.ListLogsResponse
+	27, // 33: user.v1.UserService.RecordLog:output_type -> user.v1.RecordLogResponse
+	29, // 34: user.v1.UserService.ListLogs:output_type -> user.v1.ListLogsResponse
 	21, // [21:35] is the sub-list for method output_type
 	7,  // [7:21] is the sub-list for method input_type
 	7,  // [7:7] is the sub-list for extension type_name
@@ -2367,7 +2366,7 @@ func file_user_proto_init() {
 			NumEnums:      2,
 			NumMessages:   28,
 			NumExtensions: 0,
-			NumServices:   2,
+			NumServices:   1,
 		},
 		GoTypes:           file_user_proto_goTypes,
 		DependencyIndexes: file_user_proto_depIdxs,
