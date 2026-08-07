@@ -20,11 +20,11 @@ import (
 	"github.com/mysunshines/gocommon/cache"
 	"github.com/mysunshines/gocommon/configcenter"
 	"github.com/mysunshines/gocommon/constants"
+	"github.com/mysunshines/gocommon/consul"
 	common_database "github.com/mysunshines/gocommon/database"
 	"github.com/mysunshines/gocommon/log"
 	"github.com/mysunshines/gocommon/metrics"
 	commonmiddleware "github.com/mysunshines/gocommon/middleware"
-	"github.com/mysunshines/gocommon/consul"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -47,11 +47,13 @@ type Server struct {
 	blacklistRepo repository.BlacklistRepository
 	userHandl     *v1.UserHandler
 
-	db            *gorm.DB
-	cb            *gobreaker.CircuitBreaker
+	db *gorm.DB
+	cb *gobreaker.CircuitBreaker
 }
 
-func NewServer(cfg *config.Config) *Server {
+// initInfra 负责所有外部基础设施的初始化（数据库、Redis、表结构迁移）。
+// 与 NewServer（纯依赖装配）分离，使 main 的启动顺序清晰可控。
+func initInfra(cfg *config.Config) *gorm.DB {
 	// 初始化数据库（类型别名，直接传递）
 	if err := common_database.Init(&cfg.Database, cfg.App.Env); err != nil {
 		log.Fatalf("Failed to init database: %v", err)
@@ -65,6 +67,14 @@ func NewServer(cfg *config.Config) *Server {
 		log.Warnf("Warning: Failed to init Redis: %v", err)
 	}
 
+	// 自动迁移（分布式锁保护，多实例只有一个执行）
+	runDBMigration(db, "migration:lock:user_service", &model.User{}, &model.Token{}, &model.UserBlacklist{}, &model.OperationLog{})
+
+	return db
+}
+
+// NewServer 仅做依赖装配（限流器/JWT/熔断器/仓储/服务/处理器），不做任何 I/O。
+func NewServer(cfg *config.Config, db *gorm.DB) *Server {
 	// 初始化限流器（类型别名，直接传递）
 	commonmiddleware.InitRateLimiter(&cfg.RateLimit)
 
@@ -78,9 +88,6 @@ func NewServer(cfg *config.Config) *Server {
 		Interval:    constants.DefaultCBInterval * time.Second,
 		Timeout:     constants.DefaultCBTimeout * time.Second,
 	})
-
-	// 自动迁移（分布式锁保护，多实例只有一个执行）
-	runDBMigration(db, "migration:lock:user_service", &model.User{}, &model.Token{}, &model.UserBlacklist{}, &model.OperationLog{})
 
 	// 初始化仓储层
 	userRepo := repository.NewUserRepository(db)
@@ -168,8 +175,8 @@ func registerToConsul(cfg *config.Config) func() error {
 		DeregisterCritical: cfg.Consul.DeregisterCritical,
 	})
 	if err != nil {
-		log.Warnf("failed to register to consul: %v", err)
-		return nil
+		// 注册失败代表服务无法被网关/下游发现，视为启动失败，直接终止进程。
+		log.Fatalf("failed to register to consul: %v", err)
 	}
 	return deregister
 }
@@ -205,7 +212,7 @@ func runDBMigration(db interface{ AutoMigrate(dst ...any) error }, lockKey strin
 }
 
 func (s *Server) runHTTPServer() {
-	if s.cfg.App.Env == "production" {
+	if s.cfg.App.Env == constants.EnvProduction {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
@@ -384,12 +391,16 @@ func (s *Server) runMetricsServer() {
 }
 
 func main() {
+	// ① 加载配置
 	cfg := loadConfig()
 
+	// ② 初始化日志
 	log.Init(cfg.App.LogDir, cfg.App.LogLevel, constants.ServiceNameUser)
+
+	// ③ 初始化指标
 	metrics.Init()
 
-	// 配置中心：从 Consul KV 拉取热更配置（限流阈值/日志级别等），缺失时降级到默认值。
+	// ④ 配置中心热更：从 Consul KV 拉取热更配置（限流阈值/日志级别等），缺失时降级到默认值。
 	hotCfg := configcenter.Init(cfg.Consul.Address, cfg.App.Name, cfg.App.Env)
 	if err := hotCfg.Load(); err != nil && err != configcenter.ErrNotFound {
 		log.Warnf("load hot config failed: %v", err)
@@ -399,13 +410,22 @@ func main() {
 	go hotCfg.Watch()
 	defer hotCfg.Stop()
 
-	server := NewServer(cfg)
+	// ⑤ 初始化基础设施（数据库 / Redis / 表迁移）
+	db := initInfra(cfg)
 
+	// ⑥ 启用 Consul 服务发现（供本服务调用下游时解析实例）
+	consul.UseConsulDiscovery(cfg.Consul.Address)
+
+	// ⑦ 注册本服务到 Consul（失败降级运行）
 	deregister := registerToConsul(cfg)
 	if deregister != nil {
 		defer deregister()
 	}
 
+	// ⑧ 装配并启动服务（Run 内部监听信号并优雅关闭）
+	server := NewServer(cfg, db)
+
+	// ⑨ 资源释放（逆序：先摘流量→关应用→关连接→停日志）
 	defer common_database.Close()
 	defer cache.Close()
 	defer log.StopRotation()
