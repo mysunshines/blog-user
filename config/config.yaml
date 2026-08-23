@@ -55,3 +55,12 @@ mail:
   smtp_password: ""
   from_address: "noreply@blog.local"
   use_tls: true
+
+# 可观测性（想法 3 · A+B）：默认关闭，配好基础设施后开启。详见 README 第 14.x 节。
+loki:
+  enabled: false
+  url: "http://loki:3100/loki/api/v1/push"
+  tenant_id: ""
+otel:
+  enabled: false
+  endpoint: "otel-collector:4317"

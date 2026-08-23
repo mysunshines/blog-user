@@ -25,6 +25,7 @@ import (
 	"github.com/mysunshines/gocommon/log"
 	"github.com/mysunshines/gocommon/metrics"
 	"github.com/mysunshines/gocommon/middleware"
+	"github.com/mysunshines/gocommon/observability"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sony/gobreaker"
 	"google.golang.org/grpc"
@@ -256,6 +257,8 @@ func (s *Server) runGRPCServer() {
 			middleware.GRPCLoggingInterceptor(),
 		),
 	}
+	// 链路追踪：服务端基于入站 W3C traceparent 生成子 span（想法 3 · 方案 B）。
+	grpcOpts = append(grpcOpts, observability.GRPCServerOptions()...)
 
 	s.grpcServer = grpc.NewServer(grpcOpts...)
 	// 显式注册 gRPC 业务服务：标准 protobuf 生成的 RegisterXxxServiceServer 不会自动生效，
@@ -337,6 +340,11 @@ func run() error {
 	// ② 初始化日志
 	log.Init(cfg.App.LogDir, cfg.App.LogLevel, constants.ServiceNameUser)
 
+	// ②.1 启用 Loki 集中日志（想法 3 · 方案 A）；未配置时降级为仅本地日志。
+	log.EnableLokiFromConfig(cfg.Loki, constants.ServiceNameUser)
+	// ②.2 启用 OpenTelemetry 链路追踪（想法 3 · 方案 B）；未配置时降级为不采集。
+	observability.InitAndRegister(constants.ServiceNameUser, cfg.OTel)
+
 	// ③ 初始化指标
 	metrics.Init(constants.ServiceNameUser)
 	// 周期性刷新运行时指标（内存/goroutine）并上报服务健康状态，消除 dashboard 长期 0 / No data。
@@ -417,5 +425,6 @@ func releaseInfra() {
 	}
 
 	// 最后停止日志轮转（flush 并关闭日志文件）
+	observability.ShutdownGlobal(context.Background())
 	log.StopRotation()
 }
