@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
-	github.com/mysunshines/gocommon v1.2.64
+	github.com/mysunshines/gocommon v1.3.0
 	github.com/prometheus/client_golang v1.20.5
 	github.com/sony/gobreaker v0.5.0
 	golang.org/x/crypto v0.51.0
