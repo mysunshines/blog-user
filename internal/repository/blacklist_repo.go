@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/mysunshines/blog-user/internal/errors"
 	"github.com/mysunshines/blog-user/internal/model"
-	"github.com/mysunshines/blog-user/pkg/errors"
 	"github.com/mysunshines/gocommon/cache"
 
 	"gorm.io/gorm"
@@ -37,7 +37,7 @@ func (r *blacklistRepository) AddToBlacklist(ctx context.Context, userID, blocke
 
 	err := r.db.WithContext(ctx).Create(blacklist).Error
 	if err != nil {
-		return errors.BlacklistFailed(err)
+		return errors.Internal("blacklist failed", err)
 	}
 
 	// 更新缓存
@@ -53,7 +53,7 @@ func (r *blacklistRepository) RemoveFromBlacklist(ctx context.Context, userID, b
 		Delete(&model.UserBlacklist{})
 
 	if result.Error != nil {
-		return errors.BlacklistFailed(result.Error)
+		return errors.Internal("blacklist failed", result.Error)
 	}
 
 	// 更新缓存
@@ -78,7 +78,7 @@ func (r *blacklistRepository) IsInBlacklist(ctx context.Context, userID, blocked
 		Count(&count)
 
 	if result.Error != nil {
-		return false, errors.BlacklistFailed(result.Error)
+		return false, errors.Internal("blacklist failed", result.Error)
 	}
 
 	// 更新缓存
@@ -97,7 +97,7 @@ func (r *blacklistRepository) GetUserBlacklist(ctx context.Context, userID uint)
 		Find(&blacklists)
 
 	if result.Error != nil {
-		return nil, errors.BlacklistFailed(result.Error)
+		return nil, errors.Internal("blacklist failed", result.Error)
 	}
 
 	return blacklists, nil

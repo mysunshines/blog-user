@@ -64,8 +64,8 @@ COPY --from=builder /app/config/ ./config/
 RUN adduser -D -g '' appuser
 USER appuser
 
-# 8081: HTTP/管理接口, 9001: gRPC 业务通信, 9091: Prometheus Metrics
-EXPOSE 8081 9001 9091
+# 8081: HTTP/探活接口, 9101: gRPC 业务通信, 9091: Prometheus Metrics
+EXPOSE 8081 9101 9091
 
 # 健康检查：每 30s 检查一次，超时 10s，启动后 5s 开始，连续 3 次失败标记 unhealthy
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

@@ -8,10 +8,11 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/mysunshines/blog-user/internal/config"
+	"github.com/mysunshines/blog-user/internal/errors"
 	"github.com/mysunshines/blog-user/internal/model"
 	"github.com/mysunshines/blog-user/internal/repository"
-	apperrors "github.com/mysunshines/blog-user/pkg/errors"
+	goconfig "github.com/mysunshines/gocommon/config"
+	"github.com/mysunshines/gocommon/constants"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/mysunshines/gocommon/cache"
@@ -38,7 +39,9 @@ type UserService interface {
 	ChangePassword(ctx context.Context, req *model.ChangePasswordRequest) error
 
 	// 管理员操作
+	AdminGetUsers(ctx context.Context, req *model.GetUsersRequest) ([]*model.UserResponse, int64, error)
 	AdminUpdateUser(ctx context.Context, req *model.AdminUpdateUserRequest) (*model.UserResponse, error)
+	AdminDeleteUser(ctx context.Context, id uint) error
 
 	// 黑名单操作
 	AddToBlacklist(ctx context.Context, req *model.BlacklistRequest) error
@@ -56,7 +59,7 @@ type ValidateTokenResult struct {
 // userService 用户服务实现
 type userService struct {
 	repo repository.UserRepository
-	cfg  *config.Config
+	cfg  *goconfig.Config
 	bf   *BloomFilter
 }
 
@@ -83,7 +86,7 @@ func (bf *BloomFilter) Contains(key string) bool {
 }
 
 // NewUserService 创建用户服务
-func NewUserService(repo repository.UserRepository, cfg *config.Config) UserService {
+func NewUserService(repo repository.UserRepository, cfg *goconfig.Config) UserService {
 	return &userService{
 		repo: repo,
 		cfg:  cfg,
@@ -101,25 +104,25 @@ const verifyCodeTTL = 5 * time.Minute
 func (s *userService) Register(ctx context.Context, req *model.RegisterRequest) (*model.AuthResponse, error) {
 	// 检查用户名和邮箱格式
 	if !isValidUsername(req.Username) {
-		return nil, apperrors.New(apperrors.ErrUnauthorized, "用户名格式不正确，支持中英文、数字、下划线，2-32个字符")
+		return nil, errors.New(errors.CodeUnauthorized, "用户名格式不正确，支持中英文、数字、下划线，2-32个字符")
 	}
 	if !isValidEmail(req.Email) {
-		return nil, apperrors.New(apperrors.ErrUnauthorized, "邮箱格式不正确")
+		return nil, errors.New(errors.CodeUnauthorized, "邮箱格式不正确")
 	}
 	if !isValidPassword(req.Password) {
-		return nil, apperrors.New(apperrors.ErrUnauthorized, "密码需包含字母和数字，6-32个字符")
+		return nil, errors.New(errors.CodeUnauthorized, "密码需包含字母和数字，6-32个字符")
 	}
 
 	// 验证验证码
 	if req.VerifyCode == "" {
-		return nil, apperrors.New(apperrors.ErrUnauthorized, "请输入邮箱验证码")
+		return nil, errors.New(errors.CodeUnauthorized, "请输入邮箱验证码")
 	}
 	storedCode, err := cache.Get(ctx, verifyCodeKeyPrefix+req.Email)
 	if err != nil || storedCode == "" {
-		return nil, apperrors.New(apperrors.ErrUnauthorized, "验证码已过期，请重新获取")
+		return nil, errors.New(errors.CodeUnauthorized, "验证码已过期，请重新获取")
 	}
 	if storedCode != req.VerifyCode {
-		return nil, apperrors.New(apperrors.ErrUnauthorized, "验证码不正确")
+		return nil, errors.New(errors.CodeUnauthorized, "验证码不正确")
 	}
 	// 验证通过后删除验证码
 	_ = cache.Delete(ctx, verifyCodeKeyPrefix+req.Email)
@@ -127,16 +130,16 @@ func (s *userService) Register(ctx context.Context, req *model.RegisterRequest) 
 	// 检查用户是否已存在
 	exists, err := s.repo.ExistsByUsernameOrEmail(ctx, req.Username, req.Email)
 	if err != nil {
-		return nil, apperrors.New(apperrors.ErrRegisterFailed, "Failed to check user existence")
+		return nil, errors.New(errors.CodeRegisterFailed, "Failed to check user existence")
 	}
 	if exists {
-		return nil, apperrors.New(apperrors.ErrUserAlreadyExists, "User already exists")
+		return nil, errors.New(errors.CodeUserAlreadyExists, "User already exists")
 	}
 
 	// 加密密码
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, apperrors.New(apperrors.ErrRegisterFailed, "Failed to hash password")
+		return nil, errors.New(errors.CodeRegisterFailed, "Failed to hash password")
 	}
 
 	// 创建用户
@@ -151,7 +154,7 @@ func (s *userService) Register(ctx context.Context, req *model.RegisterRequest) 
 	}
 
 	if err := s.repo.Create(ctx, user); err != nil {
-		return nil, apperrors.New(apperrors.ErrRegisterFailed, "Failed to create user")
+		return nil, errors.New(errors.CodeRegisterFailed, "Failed to create user")
 	}
 
 	// 添加到布隆过滤器
@@ -160,7 +163,7 @@ func (s *userService) Register(ctx context.Context, req *model.RegisterRequest) 
 	// 生成Token
 	token, csrfToken, err := s.generateToken(user)
 	if err != nil {
-		return nil, apperrors.New(apperrors.ErrRegisterFailed, "Failed to generate token")
+		return nil, errors.New(errors.CodeRegisterFailed, "Failed to generate token")
 	}
 
 	// 保存Token
@@ -178,23 +181,23 @@ func (s *userService) Register(ctx context.Context, req *model.RegisterRequest) 
 // SendVerificationCode 发送邮箱验证码
 func (s *userService) SendVerificationCode(ctx context.Context, req *model.SendVerifyCodeRequest) error {
 	if !isValidEmail(req.Email) {
-		return apperrors.New(apperrors.ErrUnauthorized, "邮箱格式不正确")
+		return errors.New(errors.CodeUnauthorized, "邮箱格式不正确")
 	}
 
 	// 检查邮箱是否已被注册
 	_, err := s.repo.GetByEmail(ctx, req.Email)
 	if err == nil {
-		return apperrors.New(apperrors.ErrUserAlreadyExists, "该邮箱已被注册")
+		return errors.New(errors.CodeUserAlreadyExists, "该邮箱已被注册")
 	}
 	if !stderrors.Is(err, repository.ErrNotFound) {
-		return apperrors.New(apperrors.ErrInternal, "服务器内部错误")
+		return errors.New(errors.CodeInternal, "服务器内部错误")
 	}
 
 	// 限制发送频率：60秒内只能发送一次
 	rateLimitKey := "verify_code_rate:" + req.Email
 	ok, setErr := cache.SetNX(ctx, rateLimitKey, "1", 60*time.Second)
 	if setErr == nil && !ok {
-		return apperrors.New(apperrors.ErrTooManyRequests, "验证码发送过于频繁，请60秒后再试")
+		return errors.New(errors.CodeTooManyRequests, "验证码发送过于频繁，请60秒后再试")
 	}
 
 	// 生成6位随机验证码
@@ -203,7 +206,7 @@ func (s *userService) SendVerificationCode(ctx context.Context, req *model.SendV
 	// 存入Redis，5分钟过期
 	if err := cache.Set(ctx, verifyCodeKeyPrefix+req.Email, code, verifyCodeTTL); err != nil {
 		log.Errorf("Failed to store verify code for %s: %v", req.Email, err)
-		return apperrors.New(apperrors.ErrInternal, "验证码存储失败")
+		return errors.New(errors.CodeInternal, "验证码存储失败")
 	}
 
 	// 发送邮件
@@ -213,13 +216,13 @@ func (s *userService) SendVerificationCode(ctx context.Context, req *model.SendV
 		Username: s.cfg.Mail.SMTPUsername,
 		Password: s.cfg.Mail.SMTPPassword,
 		From:     s.cfg.Mail.FromAddress,
-		FromName: "Blog 博客系统",
+		FromName: "Blog",
 	}
 	msg := notify.Message{
 		From:     s.cfg.Mail.FromAddress,
-		FromName: "Blog 博客系统",
+		FromName: "Blog",
 		To:       []string{req.Email},
-		Subject:  "博客系统 - 邮箱验证码",
+		Subject:  "Blog - 邮箱验证码",
 		HTMLBody: fmt.Sprintf(`
 		<div style="max-width:600px;margin:0 auto;padding:20px;font-family:Arial,sans-serif;">
 			<h2 style="color:#333;">邮箱验证码</h2>
@@ -230,11 +233,11 @@ func (s *userService) SendVerificationCode(ctx context.Context, req *model.SendV
 		</div>`, code),
 	}
 
-	if err := notify.Send(cfg, msg); err != nil {
+	if err := notify.Send(ctx, cfg, msg); err != nil {
 		log.Errorf("Failed to send verify code email to %s: %v", req.Email, err)
 		// 邮件发送失败时删除已存储的验证码
 		_ = cache.Delete(ctx, verifyCodeKeyPrefix+req.Email)
-		return apperrors.New(apperrors.ErrInternal, "邮件发送失败，请稍后重试")
+		return errors.New(errors.CodeInternal, "邮件发送失败，请稍后重试")
 	}
 
 	log.Infof("Verification code sent to %s", req.Email)
@@ -247,25 +250,25 @@ func (s *userService) Login(ctx context.Context, req *model.LoginRequest) (*mode
 	user, err := s.repo.GetByUsernameOrEmail(ctx, req.Username, req.Username)
 	if err != nil {
 		if stderrors.Is(err, repository.ErrNotFound) {
-			return nil, apperrors.New(apperrors.ErrUserAlreadyExists, "Invalid username or password")
+			return nil, errors.New(errors.CodeUserAlreadyExists, "Invalid username or password")
 		}
-		return nil, apperrors.New(apperrors.ErrLoginFailed, "Failed to get user")
+		return nil, errors.New(errors.CodeLoginFailed, "Failed to get user")
 	}
 
 	// 验证密码
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		return nil, apperrors.New(apperrors.ErrPasswordIncorrect, "Invalid username or password")
+		return nil, errors.New(errors.CodePasswordIncorrect, "Invalid username or password")
 	}
 
 	// 检查用户状态
 	if user.Status != model.UserStatusNormal {
-		return nil, apperrors.New(apperrors.ErrForbidden, "User account is disabled")
+		return nil, errors.New(errors.CodeForbidden, "User account is disabled")
 	}
 
 	// 生成Token
 	token, csrfToken, err := s.generateToken(user)
 	if err != nil {
-		return nil, apperrors.New(apperrors.ErrLoginFailed, "Failed to generate token")
+		return nil, errors.New(errors.CodeLoginFailed, "Failed to generate token")
 	}
 
 	// 保存Token
@@ -284,7 +287,7 @@ func (s *userService) Login(ctx context.Context, req *model.LoginRequest) (*mode
 func (s *userService) Logout(ctx context.Context, req *model.LogoutRequest) error {
 	// 删除Token
 	if err := s.repo.DeleteToken(ctx, req.Token); err != nil {
-		return apperrors.New(apperrors.ErrInternal, "Failed to logout")
+		return errors.New(errors.CodeInternal, "Failed to logout")
 	}
 	return nil
 }
@@ -323,8 +326,8 @@ func (s *userService) ValidateToken(ctx context.Context, token string) (*Validat
 		return &ValidateTokenResult{Valid: false}, nil
 	}
 
-	userID := uint(claims["user_id"].(float64))
-	username := claims["username"].(string)
+	userID := uint(claims[constants.JWTClaimUserID].(float64))
+	username := claims[constants.JWTClaimUsername].(string)
 
 	return &ValidateTokenResult{
 		UserID:   userID,
@@ -343,14 +346,14 @@ func (s *userService) GetUser(ctx context.Context, userID uint, username string)
 	} else if username != "" {
 		user, err = s.repo.GetByUsername(ctx, username)
 	} else {
-		return nil, apperrors.New(apperrors.ErrUnauthorized, "user_id or username required")
+		return nil, errors.New(errors.CodeUnauthorized, "user_id or username required")
 	}
 
 	if err != nil {
 		if stderrors.Is(err, repository.ErrNotFound) {
-			return nil, apperrors.New(apperrors.ErrUserNotFound, "User not found")
+			return nil, errors.New(errors.CodeUserNotFound, "User not found")
 		}
-		return nil, apperrors.New(apperrors.ErrInternal, "Failed to get user")
+		return nil, errors.New(errors.CodeInternal, "Failed to get user")
 	}
 
 	return user.ToResponsePtr(), nil
@@ -361,9 +364,9 @@ func (s *userService) UpdateUser(ctx context.Context, req *model.UpdateUserReque
 	user, err := s.repo.GetByID(ctx, req.UserID)
 	if err != nil {
 		if stderrors.Is(err, repository.ErrNotFound) {
-			return nil, apperrors.New(apperrors.ErrUserNotFound, "User not found")
+			return nil, errors.New(errors.CodeUserNotFound, "User not found")
 		}
-		return nil, apperrors.New(apperrors.ErrInternal, "Failed to get user")
+		return nil, errors.New(errors.CodeInternal, "Failed to get user")
 	}
 
 	// 更新字段
@@ -378,7 +381,7 @@ func (s *userService) UpdateUser(ctx context.Context, req *model.UpdateUserReque
 	}
 
 	if err := s.repo.Update(ctx, user); err != nil {
-		return nil, apperrors.New(apperrors.ErrUpdateFailed, "Failed to update user")
+		return nil, errors.New(errors.CodeUserUpdateFailed, "Failed to update user")
 	}
 
 	return user.ToResponsePtr(), nil
@@ -394,9 +397,9 @@ func (s *userService) DeleteUser(ctx context.Context, userID uint) error {
 	// 删除用户
 	if err := s.repo.Delete(ctx, userID); err != nil {
 		if stderrors.Is(err, repository.ErrNotFound) {
-			return apperrors.New(apperrors.ErrUserNotFound, "User not found")
+			return errors.New(errors.CodeUserNotFound, "User not found")
 		}
-		return apperrors.New(apperrors.ErrDeleteFailed, "Failed to delete user")
+		return errors.New(errors.CodeUserDeleteFailed, "Failed to delete user")
 	}
 
 	return nil
@@ -415,7 +418,7 @@ func (s *userService) GetUsers(ctx context.Context, req *model.GetUsersRequest) 
 
 	users, total, err := s.repo.List(ctx, page, pageSize, req.Role, req.Status)
 	if err != nil {
-		return nil, 0, apperrors.New(apperrors.ErrInternal, "Failed to list users")
+		return nil, 0, errors.New(errors.CodeInternal, "Failed to list users")
 	}
 
 	responses := make([]*model.UserResponse, len(users))
@@ -431,26 +434,26 @@ func (s *userService) ChangePassword(ctx context.Context, req *model.ChangePassw
 	user, err := s.repo.GetByID(ctx, req.UserID)
 	if err != nil {
 		if stderrors.Is(err, repository.ErrNotFound) {
-			return apperrors.New(apperrors.ErrUserNotFound, "User not found")
+			return errors.New(errors.CodeUserNotFound, "User not found")
 		}
-		return apperrors.New(apperrors.ErrInternal, "Failed to get user")
+		return errors.New(errors.CodeInternal, "Failed to get user")
 	}
 
 	// 验证旧密码
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.OldPassword)); err != nil {
-		return apperrors.New(apperrors.ErrPasswordIncorrect, "Old password incorrect")
+		return errors.New(errors.CodePasswordIncorrect, "Old password incorrect")
 	}
 
 	// 加密新密码
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		return apperrors.New(apperrors.ErrInternal, "Failed to hash password")
+		return errors.New(errors.CodeInternal, "Failed to hash password")
 	}
 
 	// 更新密码
 	user.Password = string(hashedPassword)
 	if err := s.repo.Update(ctx, user); err != nil {
-		return apperrors.New(apperrors.ErrUpdateFailed, "Failed to update password")
+		return errors.New(errors.CodeUserUpdateFailed, "Failed to update password")
 	}
 
 	return nil
@@ -465,7 +468,7 @@ func (s *userService) AddToBlacklist(ctx context.Context, req *model.BlacklistRe
 	}
 
 	if err := s.repo.AddToBlacklist(ctx, blacklist); err != nil {
-		return apperrors.New(apperrors.ErrInternal, "Failed to add to blacklist")
+		return errors.New(errors.CodeInternal, "Failed to add to blacklist")
 	}
 
 	return nil
@@ -474,7 +477,7 @@ func (s *userService) AddToBlacklist(ctx context.Context, req *model.BlacklistRe
 // RemoveFromBlacklist 从黑名单移除
 func (s *userService) RemoveFromBlacklist(ctx context.Context, req *model.BlacklistRequest) error {
 	if err := s.repo.RemoveFromBlacklist(ctx, req.UserID, req.TargetUserID); err != nil {
-		return apperrors.New(apperrors.ErrInternal, "Failed to remove from blacklist")
+		return errors.New(errors.CodeInternal, "Failed to remove from blacklist")
 	}
 	return nil
 }
@@ -483,7 +486,7 @@ func (s *userService) RemoveFromBlacklist(ctx context.Context, req *model.Blackl
 func (s *userService) IsInBlacklist(ctx context.Context, userID, targetUserID uint) (bool, error) {
 	inBlacklist, err := s.repo.IsInBlacklist(ctx, userID, targetUserID)
 	if err != nil {
-		return false, apperrors.New(apperrors.ErrInternal, "Failed to check blacklist")
+		return false, errors.New(errors.CodeInternal, "Failed to check blacklist")
 	}
 	return inBlacklist, nil
 }
@@ -493,9 +496,9 @@ func (s *userService) AdminUpdateUser(ctx context.Context, req *model.AdminUpdat
 	user, err := s.repo.GetByID(ctx, req.UserID)
 	if err != nil {
 		if stderrors.Is(err, repository.ErrNotFound) {
-			return nil, apperrors.New(apperrors.ErrUserNotFound, "User not found")
+			return nil, errors.New(errors.CodeUserNotFound, "User not found")
 		}
-		return nil, apperrors.New(apperrors.ErrInternal, "Failed to get user")
+		return nil, errors.New(errors.CodeInternal, "Failed to get user")
 	}
 
 	// 构造需更新的列（用 map 避免结构体 Updates 跳过零值，如禁用 status=0）
@@ -511,10 +514,20 @@ func (s *userService) AdminUpdateUser(ctx context.Context, req *model.AdminUpdat
 	}
 
 	if err := s.repo.UpdateFields(ctx, req.UserID, cols); err != nil {
-		return nil, apperrors.New(apperrors.ErrUpdateFailed, "Failed to update user")
+		return nil, errors.New(errors.CodeUserUpdateFailed, "Failed to update user")
 	}
 
 	return user.ToResponsePtr(), nil
+}
+
+// AdminGetUsers 管理员查询用户列表（复用 GetUsers，支持按角色/状态/关键字过滤）
+func (s *userService) AdminGetUsers(ctx context.Context, req *model.GetUsersRequest) ([]*model.UserResponse, int64, error) {
+	return s.GetUsers(ctx, req)
+}
+
+// AdminDeleteUser 管理员删除用户（复用 DeleteUser）
+func (s *userService) AdminDeleteUser(ctx context.Context, id uint) error {
+	return s.DeleteUser(ctx, id)
 }
 
 // generateToken 生成JWT Token，并返回随 JWT 下发的 CSRF token。
@@ -522,12 +535,12 @@ func (s *userService) AdminUpdateUser(ctx context.Context, req *model.AdminUpdat
 func (s *userService) generateToken(user *model.User) (string, string, error) {
 	csrfToken := util.GenerateRandomString(32)
 	claims := jwt.MapClaims{
-		"user_id":  user.ID,
-		"username": user.Username,
-		"role":     user.Role,
-		"csrf":     csrfToken,
-		"exp":      time.Now().Add(time.Duration(s.cfg.JWT.ExpireTime) * time.Second).Unix(),
-		"iat":      time.Now().Unix(),
+		constants.JWTClaimUserID:   user.ID,
+		constants.JWTClaimUsername: user.Username,
+		constants.JWTClaimRole:     user.Role,
+		constants.JWTClaimCSRF:     csrfToken,
+		"exp":                      time.Now().Add(time.Duration(s.cfg.JWT.ExpireTime) * time.Second).Unix(),
+		"iat":                      time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

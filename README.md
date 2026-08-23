@@ -6,7 +6,7 @@
 
 **端口配置**:
 - HTTP: 8081
-- gRPC: 9090
+- gRPC: 9101
 - Metrics: 9091
 
 ## 二、技术栈
@@ -14,8 +14,7 @@
 | 类别 | 技术 |
 |------|------|
 | 语言 | Go 1.21+ |
-| Web框架 | Gin |
-| RPC框架 | gRPC + Protobuf |
+| RPC框架 | gRPC + Protobuf（**业务层纯 gRPC**，HTTP 仅保留 `/health`、`/ready`、`/version` 探活端口，无 gin 业务路由） |
 | 数据库 | MySQL 8.0 |
 | 缓存 | Redis |
 | 监控 | Prometheus |
@@ -27,12 +26,11 @@
 ```
 user-service/
 ├── cmd/server/
-│   └── main.go                 # 服务启动 & 路由注册
+│   └── main.go                 # 服务启动（gRPC 业务端口 + 探活 HTTP 端口）
 ├── internal/
 │   ├── config/config.go        # 配置管理
 │   ├── handler/
-│   │   ├── user_handler.go     # HTTP 处理器
-│   │   └── grpc_handler.go     # gRPC 处理器
+│   │   └── v1/grpc_handler.go  # gRPC 处理器（含 requireGRPCAdmin 与审计）
 │   ├── service/user_service.go # 业务逻辑层
 │   ├── repository/
 │   │   ├── user_repo.go        # 用户数据访问
@@ -51,7 +49,9 @@ user-service/
 
 ## 四、API 列表
 
-### 4.1 HTTP API
+### 4.1 gRPC API（经网关 `/api/v1` 与 `/admin-api` 反射代理）
+
+> 业务层纯 gRPC，下表路径为网关反射代理入口（`/api/v1/user/<snake_method>` / `/admin-api/users/<snake_method>`），实际对应 `user.v1.UserService` 的 gRPC 方法。
 
 | 方法 | 路径 | 描述 | 认证 |
 |------|------|------|------|
@@ -342,7 +342,9 @@ service UserService {
 | `goroutine_count` | Gauge | - | Goroutine数量 |
 | `panic_counter_total` | Counter | service | Panic次数 |
 | `mysql_slow_queries_total` | Counter | - | MySQL慢查询数 |
-| `redis_hit_rate` | Gauge | - | Redis命中率 |
+| `redis_cache_hits_total` | Counter | - | Redis缓存命中次数 |
+| `redis_cache_misses_total` | Counter | - | Redis缓存未命中次数 |
+| Redis命中率(PromQL) | - | - | `sum(rate(redis_cache_hits_total[5m])) / clamp_min(sum(rate(redis_cache_hits_total[5m])) + sum(rate(redis_cache_misses_total[5m])), 0)` |
 | `redis_hot_keys_total` | Counter | key | 热键访问次数 |
 | `cache_operations_total` | Counter | operation, status | 缓存操作数 |
 | `db_operations_total` | Counter | operation, status | 数据库操作数 |
@@ -733,13 +735,25 @@ grpcOpts := []grpc.ServerOption{
 }
 ```
 
-## 八、中间件链
+## 八、中间件链（gRPC 拦截器 + 探活 HTTP）
 
+业务层纯 gRPC，HTTP 仅保留探活端口（无 gin 业务路由）。
+
+```text
+gRPC 拦截器链（grpc.ChainUnaryInterceptor）：
+  grpcUnaryInterceptor       10s 超时 + gobreaker 熔断
+  → GRPCAuthInterceptor()    从 metadata 校验 JWT，注入 user_id/role/username 到 ctx
+  → GRPCMetricsInterceptor() RPC 级 QPS/延迟/错误
+  → GRPCLoggingInterceptor() 记录 RPC 方法/对端/耗时/错误
+
+handler 内鉴权：
+  Register/SendCode/Login                 公开（注册/发验证码/登录），RequireGRPCAuth 不强制
+  其余用户方法                            RequireGRPCAuth(ctx)  // 已登录用户
+  AdminGetUsers/AdminUpdateUser/AdminDeleteUser/ListOperationLogs
+                                        requireGRPCAdmin()  // 仅管理员（RoleAdmin）
 ```
-请求 → RecoveryMiddleware → LoggingMiddleware → CORSMiddleware 
-    → MetricsMiddleware → TraceMiddleware → RateLimitMiddleware 
-    → JWTValidMiddleware → Handler → Response
-```
+
+探活 HTTP（`runHTTPServer`，`net/http` mux，无业务路由）：`/health`、`/ready`、`/version`。
 
 ## 九、数据库模型
 
@@ -1327,3 +1341,24 @@ INSERT INTO user_blacklists (user_id, blocked_user_id, reason) VALUES (?, ?, ?)
 | - | idx_blocked_user_id | 辅助索引 |
 
 **说明**: `uk_user_blocked` 是复合唯一索引，两个等值条件查询可以直接命中。
+
+## 进程退出与资源释放
+
+服务在 `cmd/server/main.go` 中统一处理退出流程：监听 `SIGINT`/`SIGTERM`，由 `Server.Run()` 优雅关闭 gRPC 与探活 HTTP server（10s 超时），随后调用 `shutdown()` 集合方法按固定顺序释放其余资源：
+
+1. **摘除流量**：从 Consul 注销（`deregister`），让网关停止转发新请求；
+2. **释放连接**：关闭 Redis 连接池（`cache.Close`）→ 关闭数据库连接池（`database.Close`）；
+3. **停热更/指标**：停止配置中心热更监听（`HotConfig.Stop`）→ 取消指标采集 context（`metricsCancel`）；
+4. **停日志**：最后 `log.StopRotation()` flush 并关闭日志文件。
+
+> 所有释放集中在 `shutdown()` 一处便于审计，新增需释放的资源只需在此追加，避免分散 `defer` 导致顺序混乱或重复释放。
+
+### 异常退出兜底（panic / 初始化失败）
+
+除上述正常 `SIGINT/SIGTERM` 路径外，本服务对两类异常退出也做了资源兜底：
+
+- **初始化失败**：`loadConfig` / `initInfra` / `registerToConsul` 等不再直接 `log.Fatalf`（内部 `os.Exit`），而是返回 `error` 由 `run()` 统一处理；`run()` 通过 `defer releaseInfra()` 释放已初始化的全局资源后回到 `main` 上报错误。
+- **运行期 panic**：`main` 顶层 `defer recover` 捕获 panic，`log.Errorf` 打印堆栈后调用 `releaseInfra()` 兜底释放再 `os.Exit(1)`。
+- HTTP/gRPC server 监听失败也不再 `os.Exit`，而是通过 `Server.quitCh` 通知 `Run` 走正常 `shutdown()` 路径。
+
+> `releaseInfra()` 幂等可重复调用，由正常 `shutdown`、panic 兜底、初始化失败 `defer` 三处共用，保证任何退出路径都不会泄漏 Redis/DB 连接、日志句柄或后台指标 goroutine。
