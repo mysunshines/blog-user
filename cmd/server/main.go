@@ -170,6 +170,8 @@ func registerToConsul(cfg *goconfig.Config) (func() error, error) {
 		HTTPPort:           cfg.HTTP.Port,
 		CheckInterval:      cfg.Consul.CheckInterval,
 		DeregisterCritical: cfg.Consul.DeregisterCritical,
+		Version:            consul.VersionFromEnv(Version),
+		Canary:             consul.CanaryFromEnv(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to register to consul: %v", err)
