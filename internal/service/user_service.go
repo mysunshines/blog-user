@@ -5,6 +5,7 @@ import (
 	stderrors "errors"
 	"fmt"
 	"math/rand"
+	"sync/atomic"
 	"time"
 	"unicode"
 
@@ -58,40 +59,65 @@ type ValidateTokenResult struct {
 
 // userService 用户服务实现
 type userService struct {
-	repo repository.UserRepository
-	cfg  *goconfig.Config
-	bf   *BloomFilter
-}
-
-// BloomFilter 布隆过滤器
-type BloomFilter struct {
-	data map[string]bool
-}
-
-// NewBloomFilter 创建布隆过滤器
-func NewBloomFilter(size uint) *BloomFilter {
-	return &BloomFilter{
-		data: make(map[string]bool),
-	}
-}
-
-// Add 添加元素
-func (bf *BloomFilter) Add(key string) {
-	bf.data[key] = true
-}
-
-// Contains 检查元素是否存在
-func (bf *BloomFilter) Contains(key string) bool {
-	return bf.data[key]
+	repo    repository.UserRepository
+	cfg     *goconfig.Config
+	bf      *cache.BloomFilter // gocommon Redis 布隆过滤器，缓存全量历史用户名
+	bfReady atomic.Bool        // 布隆过滤器预热完成标记，未就绪时注册走 DB 全量查重
 }
 
 // NewUserService 创建用户服务
 func NewUserService(repo repository.UserRepository, cfg *goconfig.Config) UserService {
-	return &userService{
+	// Redis 布隆过滤器：注册时快速预判 username 是否已存在，命中/未命中逻辑见 Register。
+	// 容量按目标量级用公式估算（m = -n·ln(p)/(ln2)², k = 0.693·m/n）：
+	//   10 万用户 @1% 误判：m≈96万bit(~120KB)、k=7
+	//   1000 万用户 @1% 误判：m≈9585万bit(~11.4MB)、k=7
+	//   1 亿用户 @1% 误判：m≈9.6亿bit(~114MB)、k=7
+	// 本项目按千万级预估取 m=1亿bit(~12MB)、k=7；量级变化时按公式调整即可。
+	// key 自动带 KeyPrefix。
+	bf := cache.NewBloomFilter("user:username:bloom", 100_000_000, 7)
+	s := &userService{
 		repo: repo,
 		cfg:  cfg,
-		bf:   NewBloomFilter(100000),
+		bf:   bf,
 	}
+
+	// 异步预热布隆过滤器（千万级用户量若同步预热，全量加载内存 + 逐条 Add RTT
+	// 会拖垮启动）。预热完成前 bfReady=false，Register 走 DB 全量查重，语义与
+	// 未接入布隆时完全一致，预热完毕自动切换到布隆快路径。
+	go s.warmUpBloomFilter()
+	return s
+}
+
+// warmUpBloomFilter 按 id 游标分批从 DB 灌入全量历史用户名：
+// 每批一次 pipeline 往返（AddBulk），避免全量加载内存与逐条网络往返。
+func (s *userService) warmUpBloomFilter() {
+	ctx := context.Background()
+	const pageSize = 5000 // 每批 5000 用户名 × 7 哈希 = 3.5 万条 SetBit，单次 pipeline 往返
+	var (
+		afterID uint
+		added   int
+	)
+	for {
+		names, nextID, err := s.repo.ListUsernamesByPage(ctx, afterID, pageSize)
+		if err != nil {
+			log.Warnf("warm up bloom filter page failed (after id=%d): %v", afterID, err)
+			break
+		}
+		if len(names) == 0 {
+			break
+		}
+		if err := s.bf.AddBulk(ctx, names); err != nil {
+			log.Warnf("warm up bloom filter bulk add failed: %v", err)
+			break
+		}
+		added += len(names)
+		afterID = nextID
+		if len(names) < pageSize {
+			break
+		}
+	}
+	s.bfReady.Store(true)
+	log.Infof("username bloom filter warmed up, %d entries", added)
 }
 
 // verifyCodeKeyPrefix Redis 验证码 key 前缀
@@ -127,13 +153,37 @@ func (s *userService) Register(ctx context.Context, req *model.RegisterRequest) 
 	// 验证通过后删除验证码
 	_ = cache.Delete(ctx, verifyCodeKeyPrefix+req.Email)
 
-	// 检查用户是否已存在
-	exists, err := s.repo.ExistsByUsernameOrEmail(ctx, req.Username, req.Email)
-	if err != nil {
-		return nil, errors.New(errors.CodeRegisterFailed, "Failed to check user existence")
-	}
-	if exists {
-		return nil, errors.New(errors.CodeUserAlreadyExists, "User already exists")
+	if !s.bfReady.Load() {
+		// 预热窗口期：退化为 DB 全量查重（username OR email），语义与未接入布隆时一致
+		exists, err := s.repo.ExistsByUsernameOrEmail(ctx, req.Username, req.Email)
+		if err != nil {
+			return nil, errors.New(errors.CodeRegisterFailed, "Failed to check user existence")
+		}
+		if exists {
+			return nil, errors.New(errors.CodeUserAlreadyExists, "User already exists")
+		}
+	} else {
+		// 布隆过滤器快速预判 username（启动时已预热全量历史用户名）：
+		// - 未命中 → username 一定不存在，跳过 username 维度查库（快路径，省一次 DB 查询）
+		// - 命中 → 可能已存在（布隆只误报"存在"、不漏报"不存在"），查库确认
+		// - Redis 不可用 → 降级为 DB 全量查重（username OR email），保证语义不缩水
+		if hit, err := s.bf.Exists(ctx, req.Username); err != nil {
+			exists, dbErr := s.repo.ExistsByUsernameOrEmail(ctx, req.Username, req.Email)
+			if dbErr != nil {
+				return nil, errors.New(errors.CodeRegisterFailed, "Failed to check user existence")
+			}
+			if exists {
+				return nil, errors.New(errors.CodeUserAlreadyExists, "User already exists")
+			}
+		} else if hit {
+			if _, e := s.repo.GetByUsername(ctx, req.Username); e == nil {
+				return nil, errors.New(errors.CodeUserAlreadyExists, "User already exists")
+			}
+		}
+		// email 唯一性必须始终查库（布隆过滤器仅覆盖 username 维度）
+		if _, err := s.repo.GetByEmail(ctx, req.Email); err == nil {
+			return nil, errors.New(errors.CodeUserAlreadyExists, "User already exists")
+		}
 	}
 
 	// 加密密码
@@ -157,8 +207,10 @@ func (s *userService) Register(ctx context.Context, req *model.RegisterRequest) 
 		return nil, errors.New(errors.CodeRegisterFailed, "Failed to create user")
 	}
 
-	// 添加到布隆过滤器
-	s.bf.Add(req.Username)
+	// 写入布隆过滤器（失败仅影响后续预判，DB 唯一索引仍兜底）
+	if err := s.bf.Add(ctx, req.Username); err != nil {
+		log.Warnf("Failed to add username to bloom filter: %v", err)
+	}
 
 	// 生成Token
 	token, csrfToken, err := s.generateToken(user)

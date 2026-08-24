@@ -29,6 +29,9 @@ type UserRepository interface {
 	GetByUsernameOrEmail(ctx context.Context, username, email string) (*model.User, error)
 	List(ctx context.Context, page, pageSize int, role uint8, status *uint8) ([]*model.User, int64, error)
 	ExistsByUsernameOrEmail(ctx context.Context, username, email string) (bool, error)
+	// ListUsernamesByPage 按 id 游标分页查询用户名（返回下一页游标 id），
+	// 供布隆过滤器启动预热，避免大表一次全量加载到内存
+	ListUsernamesByPage(ctx context.Context, afterID, limit uint) ([]string, uint, error)
 
 	// Token操作
 	CreateToken(ctx context.Context, token *model.Token) error
@@ -168,6 +171,27 @@ func (r *userRepository) ExistsByUsernameOrEmail(ctx context.Context, username, 
 		Where("username = ? OR email = ?", username, email).
 		Count(&count).Error
 	return count > 0, err
+}
+
+// ListUsernamesByPage 按 id 游标分页查询用户名（GORM 软删除模型自动排除已删除行）。
+// 返回本页用户名列表与下一页游标 id（0 表示无更多），供布隆过滤器启动预热分批灌入。
+func (r *userRepository) ListUsernamesByPage(ctx context.Context, afterID, limit uint) ([]string, uint, error) {
+	var rows []struct {
+		ID       uint
+		Username string
+	}
+	if err := r.db.WithContext(ctx).Model(&model.User{}).
+		Where("id > ?", afterID).Order("id").Limit(int(limit)).
+		Scan(&rows).Error; err != nil {
+		return nil, 0, err
+	}
+	names := make([]string, 0, len(rows))
+	var nextID uint
+	for _, row := range rows {
+		names = append(names, row.Username)
+		nextID = row.ID
+	}
+	return names, nextID, nil
 }
 
 // CreateToken 创建Token
