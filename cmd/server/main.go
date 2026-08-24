@@ -48,9 +48,8 @@ type Server struct {
 	cfg           *goconfig.Config
 	httpServer    *http.Server
 	grpcServer    *grpc.Server
-	userSvc       service.UserService
-	userRepo      repository.UserRepository
-	blacklistRepo repository.BlacklistRepository
+	userSvc  service.UserService
+	userRepo repository.UserRepository
 
 	db *gorm.DB
 	cb *gobreaker.CircuitBreaker
@@ -98,19 +97,17 @@ func NewServer(cfg *goconfig.Config, db *gorm.DB) *Server {
 
 	// 初始化仓储层
 	userRepo := repository.NewUserRepository(db)
-	blacklistRepo := repository.NewBlacklistRepository(db)
 
 	// 初始化服务层
 	userSvc := service.NewUserService(userRepo, cfg)
 
 	return &Server{
-		cfg:           cfg,
-		userSvc:       userSvc,
-		userRepo:      userRepo,
-		blacklistRepo: blacklistRepo,
-		db:            db,
-		cb:            cb,
-		quitCh:        make(chan struct{}),
+		cfg:     cfg,
+		userSvc: userSvc,
+		userRepo: userRepo,
+		db:      db,
+		cb:      cb,
+		quitCh:  make(chan struct{}),
 	}
 }
 
