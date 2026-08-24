@@ -18,6 +18,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/mysunshines/gocommon/cache"
 	"github.com/mysunshines/gocommon/log"
+	"github.com/mysunshines/gocommon/pool"
 	"github.com/mysunshines/gocommon/notify"
 	"github.com/mysunshines/gocommon/util"
 	"golang.org/x/crypto/bcrypt"
@@ -88,31 +89,72 @@ func NewUserService(repo repository.UserRepository, cfg *goconfig.Config) UserSe
 	return s
 }
 
+// usernamePage 布隆预热一页结果：用户名列表 + 下一页游标
+type usernamePage struct {
+	names  []string
+	nextID uint
+}
+
+// fetchUsernamePage 按 id 游标拉取一页用户名（作为 pool 任务，避免闭包捕获可变 afterID）
+func (s *userService) fetchUsernamePage(ctx context.Context, afterID, limit uint) (usernamePage, error) {
+	names, nextID, err := s.repo.ListUsernamesByPage(ctx, afterID, limit)
+	if err != nil {
+		return usernamePage{}, err
+	}
+	return usernamePage{names: names, nextID: nextID}, nil
+}
+
 // warmUpBloomFilter 按 id 游标分批从 DB 灌入全量历史用户名：
 // 每批一次 pipeline 往返（AddBulk），避免全量加载内存与逐条网络往返。
+// 游标分页存在强数据依赖（第 N+1 页查询依赖第 N 页返回的 nextID），无法用 Parallel 并行；
+// 改用 pool.Submit 做流水线预取——当前页 AddBulk 写 Redis 时，下一页 DB 查询已在后台执行，
+// 每页把「查询 + 写入」两个串行 RTT 重叠为 max(查询, 写入)，预热耗时接近减半。
 func (s *userService) warmUpBloomFilter() {
 	ctx := context.Background()
 	const pageSize = 5000 // 每批 5000 用户名 × 7 哈希 = 3.5 万条 SetBit，单次 pipeline 往返
-	var (
-		afterID uint
-		added   int
-	)
+	// 流水线只需 2 个并发槽：1 个跑后台下一页 DB 查询，1 个跑当前页 AddBulk
+	p := pool.New(pool.WithMaxWorkers(2))
+
+	var added int
+	fut, err := p.Submit(ctx, func(ctx context.Context) (interface{}, error) {
+		return s.fetchUsernamePage(ctx, 0, pageSize)
+	})
+	if err != nil {
+		log.Warnf("submit warm up bloom filter first page failed: %v", err)
+		s.bfReady.Store(true)
+		return
+	}
+
 	for {
-		names, nextID, err := s.repo.ListUsernamesByPage(ctx, afterID, pageSize)
+		v, err := fut.Get(ctx)
 		if err != nil {
-			log.Warnf("warm up bloom filter page failed (after id=%d): %v", afterID, err)
+			log.Warnf("warm up bloom filter page failed: %v", err)
 			break
 		}
-		if len(names) == 0 {
+		page := v.(usernamePage)
+		if len(page.names) == 0 {
 			break
 		}
-		if err := s.bf.AddBulk(ctx, names); err != nil {
+
+		// 还有下一页时，先提交下一页查询（与当前页 AddBulk 并行）
+		if len(page.names) == pageSize {
+			next := page.nextID
+			fut, err = p.Submit(ctx, func(ctx context.Context) (interface{}, error) {
+				return s.fetchUsernamePage(ctx, next, pageSize)
+			})
+			if err != nil {
+				log.Warnf("submit warm up bloom filter next page failed: %v", err)
+				break
+			}
+		}
+
+		if err := s.bf.AddBulk(ctx, page.names); err != nil {
 			log.Warnf("warm up bloom filter bulk add failed: %v", err)
 			break
 		}
-		added += len(names)
-		afterID = nextID
-		if len(names) < pageSize {
+		added += len(page.names)
+
+		if len(page.names) < pageSize {
 			break
 		}
 	}
