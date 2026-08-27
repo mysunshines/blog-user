@@ -261,7 +261,8 @@ func (s *Server) runGRPCServer() {
 		// 拦截器链：Panic 恢复（最外层，含指标 panic_counter_total）→ 超时+熔断 → 鉴权 → 指标 → 日志
 		grpc.ChainUnaryInterceptor(
 			middleware.GRPCRecoveryInterceptor(constants.ServiceNameUser),
-			s.grpcUnaryInterceptor,
+			middleware.GRPCTimeoutInterceptor(constants.ServiceNameUser),
+			middleware.GRPCCircuitBreakerInterceptor(s.cb),
 			middleware.GRPCAuthInterceptor(),
 			middleware.GRPCMetricsInterceptor(constants.ServiceNameUser),
 			middleware.GRPCLoggingInterceptor(),
@@ -287,23 +288,6 @@ func (s *Server) runGRPCServer() {
 		log.Errorf("Failed to serve gRPC: %v", err)
 		close(s.quitCh)
 	}
-}
-
-// grpcUnaryInterceptor gRPC 统一拦截器（超时+熔断）。
-// 利用 info.FullMethod 实现按方法差异化超时：列表/搜索等重接口给予更长超时，
-// 避免被统一的短超时误杀；轻量单条查询仍走默认超时。
-func (s *Server) grpcUnaryInterceptor(ctx context.Context, req any,
-	info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-	ctx, cancel := context.WithTimeout(ctx, middleware.GRPCMethodTimeout(info.FullMethod))
-	defer cancel()
-
-	if s.cb != nil {
-		result, err := s.cb.Execute(func() (interface{}, error) {
-			return handler(ctx, req)
-		})
-		return result, err
-	}
-	return handler(ctx, req)
 }
 
 // runMetricsServer 运行指标服务器

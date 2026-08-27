@@ -9,17 +9,17 @@ import (
 
 // User 用户模型
 type User struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	Username  string    `gorm:"uniqueIndex;size:64;not null" json:"username"`
-	Email     string    `gorm:"uniqueIndex;size:128;not null" json:"email"`
-	Password  string    `gorm:"size:128;not null" json:"-"`
-	Nickname  string    `gorm:"size:64" json:"nickname"`
-	Avatar    string    `gorm:"size:256" json:"avatar"`
-	Bio       string    `gorm:"size:512" json:"bio"`
-	Role      uint8     `gorm:"default:1" json:"role"`   // 1: 普通用户 2: 管理员
-	Status    uint8     `gorm:"default:1" json:"status"` // 1: 正常 0: 禁用
-	CreatedAt time.Time  `gorm:"<-:create" json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	Username  string         `gorm:"uniqueIndex;size:64;not null" json:"username"`
+	Email     string         `gorm:"uniqueIndex;size:128;not null" json:"email"`
+	Password  string         `gorm:"size:128;not null" json:"-"`
+	Nickname  string         `gorm:"size:64" json:"nickname"`
+	Avatar    string         `gorm:"size:256" json:"avatar"`
+	Bio       string         `gorm:"size:512" json:"bio"`
+	Role      uint8          `gorm:"default:1" json:"role"`   // 1: 普通用户 2: 管理员
+	Status    uint8          `gorm:"default:1" json:"status"` // 1: 正常 0: 禁用
+	CreatedAt time.Time      `gorm:"<-:create" json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -114,9 +114,9 @@ type DeleteUserRequest struct {
 
 // GetUsersRequest 获取用户列表请求
 type GetUsersRequest struct {
-	Page     int   `form:"page,default=1" binding:"min=1"`
-	PageSize int   `form:"page_size,default=20" binding:"min=1,max=100"`
-	Role     uint8 `form:"role"`
+	Page     int    `form:"page,default=1" binding:"min=1"`
+	PageSize int    `form:"page_size,default=20" binding:"min=1,max=100"`
+	Role     uint8  `form:"role"`
 	Status   *uint8 `form:"status"`
 }
 
@@ -125,8 +125,8 @@ type GetUsersRequest struct {
 type AdminUpdateUserRequest struct {
 	UserID   uint   `json:"user_id"`
 	Nickname string `json:"nickname"`
-	Role     *uint8  `json:"role"`
-	Status   *uint8  `json:"status"`
+	Role     *uint8 `json:"role"`
+	Status   *uint8 `json:"status"`
 }
 
 // ChangePasswordRequest 修改密码请求

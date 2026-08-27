@@ -18,8 +18,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/mysunshines/gocommon/cache"
 	"github.com/mysunshines/gocommon/log"
-	"github.com/mysunshines/gocommon/pool"
 	"github.com/mysunshines/gocommon/notify"
+	"github.com/mysunshines/gocommon/pool"
 	"github.com/mysunshines/gocommon/util"
 	"golang.org/x/crypto/bcrypt"
 )
