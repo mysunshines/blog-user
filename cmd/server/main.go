@@ -45,11 +45,11 @@ var (
 )
 
 type Server struct {
-	cfg           *goconfig.Config
-	httpServer    *http.Server
-	grpcServer    *grpc.Server
-	userSvc  service.UserService
-	userRepo repository.UserRepository
+	cfg        *goconfig.Config
+	httpServer *http.Server
+	grpcServer *grpc.Server
+	userSvc    service.UserService
+	userRepo   repository.UserRepository
 
 	db *gorm.DB
 	cb *gobreaker.CircuitBreaker
@@ -102,17 +102,20 @@ func NewServer(cfg *goconfig.Config, db *gorm.DB) *Server {
 	userSvc := service.NewUserService(userRepo, cfg)
 
 	return &Server{
-		cfg:     cfg,
-		userSvc: userSvc,
+		cfg:      cfg,
+		userSvc:  userSvc,
 		userRepo: userRepo,
-		db:      db,
-		cb:      cb,
-		quitCh:  make(chan struct{}),
+		db:       db,
+		cb:       cb,
+		quitCh:   make(chan struct{}),
 	}
 }
 
+// Run 启动三组监听（HTTP 探活、gRPC、Metrics）并阻塞等待退出信号。
+// 任一 server goroutine 异常退出都会 close(quitCh)，触发整服务优雅关闭，
+// 避免半死状态（如 gRPC 挂了但探活还活着）继续接收流量。
 func (s *Server) Run() error {
-	// 启动 HTTP 服务器
+	// 启动 HTTP 服务器（仅探活）
 	go s.runHTTPServer()
 
 	// 启动 gRPC 服务器
@@ -226,30 +229,38 @@ func (s *Server) runHTTPServer() {
 	}
 }
 
+// runGRPCServer 运行 gRPC 服务器（本服务唯一的业务入口：
+// 公开/用户/admin 接口全部经 Gateway 反射代理转发到此）。
 func (s *Server) runGRPCServer() {
 	lis, err := net.Listen("tcp", goconfig.Get().GRPC.Addr())
 	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+		// 不能用 log.Fatalf（内部 os.Exit 会跳过 main 顶层 defer 的资源释放），
+		// 统一走 quitCh 通知 Run 进入正常关闭路径。
+		log.Errorf("Failed to listen: %v", err)
+		close(s.quitCh)
+		return
 	}
 
-	// gRPC 限流和超时配置（keepalive/并发流取自 config.Server.GRPC，仅启动期生效）
+	// gRPC server 选项（keepalive/并发流取自 config.Server.GRPC，仅启动期生效）
 	g := goconfig.Get().Server.GRPC
 	grpcOpts := []grpc.ServerOption{
-		// 连接超时
+		// keepalive 服务端参数：回收空闲/超长连接，防止连接堆积与负载不均
 		grpc.KeepaliveParams(keepalive.ServerParameters{
-			MaxConnectionIdle:     time.Duration(g.MaxConnectionIdle) * time.Second,
-			MaxConnectionAge:      time.Duration(g.MaxConnectionAge) * time.Second,
-			MaxConnectionAgeGrace: time.Duration(g.MaxConnectionAgeGrace) * time.Second,
+			MaxConnectionIdle:     time.Duration(g.MaxConnectionIdle) * time.Second,     // 空闲多久后发 GOAWAY 关闭
+			MaxConnectionAge:      time.Duration(g.MaxConnectionAge) * time.Second,      // 连接最大存活（强制周期重建，实现实例间再均衡）
+			MaxConnectionAgeGrace: time.Duration(g.MaxConnectionAgeGrace) * time.Second, // 超龄后给在途 RPC 的宽限期
 		}),
-		// 超时配置
+		// keepalive 约束：客户端 ping 间隔小于 MinTime 判为滥用（GOAWAY 断连）。
+		// 客户端（gateway/grpcclient）的 ping Time 必须大于此值。
 		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
 			MinTime:             time.Duration(g.MinPingInterval) * time.Second,
-			PermitWithoutStream: true,
+			PermitWithoutStream: true, // 无活跃 RPC 时也允许 ping（探活必需）
 		}),
-		// 最大并发连接数
+		// 最大并发流（HTTP/2 单连接上的并发 RPC 上限）
 		grpc.MaxConcurrentStreams(g.MaxConcurrentStreams),
-		// 添加 unary 拦截器（超时+熔断），并叠加 gRPC 鉴权/指标/日志拦截器
+		// 拦截器链：Panic 恢复（最外层，含指标 panic_counter_total）→ 超时+熔断 → 鉴权 → 指标 → 日志
 		grpc.ChainUnaryInterceptor(
+			middleware.GRPCRecoveryInterceptor(constants.ServiceNameUser),
 			s.grpcUnaryInterceptor,
 			middleware.GRPCAuthInterceptor(),
 			middleware.GRPCMetricsInterceptor(constants.ServiceNameUser),
