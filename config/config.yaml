@@ -1,26 +1,43 @@
+# ============================================================
+# user-service 配置（本地开发环境 / development）
+# ------------------------------------------------------------
+# 环境切换（优先级从高到低）：
+#   1. CONFIG_PATH 环境变量显式指定
+#   2. config/config_${APP_ENV}.yaml（APP_ENV=test|production）
+#   3. config/config.yaml（本文件，APP_ENV 未设置或为 development）
+#
+# 全仓库统一约定（详见 README「端口分配」与「配置规范」）：
+#   - 端口段：HTTP 808x / gRPC 91xx / Metrics 909x
+#   - 时间单位：所有 expire_time / *_sec / *_ttl 字段统一为「秒」
+#   - 段落顺序：app → grpc → http → database → redis → jwt → consul
+#              → metrics → rate_limit → server → loki → otel
+# ============================================================
+
 app:
   name: "user-service"
   env: "development"
   log_dir: "./logs"
   log_level: "info"
 
+# gRPC：唯一业务入口（C 端流量经 gateway 动态转发至此）
 grpc:
   host: "0.0.0.0"
   port: 9101
 
-# HTTP 服务配置（健康检查 / 就绪探针；业务 API 亦经此端口，便于直连调试）
+# HTTP：健康检查 / 就绪探针；业务 API 亦经此端口，便于直连调试
 http:
   host: "0.0.0.0"
   port: 8081
 
+# 数据库：与 article/comment 共用 blog 库（init.sql 仅创建 blog 与 notification_db）
 database:
   host: "localhost"
   port: 3306
   user: "root"
-  password: "password"
-  name: "user_db"
-  max_open_conns: 100
-  max_idle_conns: 10
+  password: "root123"
+  name: "blog"
+  max_open_conns: 25   # 多实例安全：4 服务 × 25 = 100 < MySQL 默认 151
+  max_idle_conns: 5
   conn_max_lifetime: 3600
 
 redis:
@@ -30,37 +47,53 @@ redis:
   db: 0
   pool_size: 100
 
+# 注意：expire_time 单位为「秒」，必须全仓库一致（签发与校验跨服务生效）
 jwt:
   secret: "your-secret-key-change-in-production"
-  expire_time: 168 # 7 days in hours
+  expire_time: 604800  # 7 天
 
 consul:
   address: "localhost:8500"
-  check_interval: 10
-  deregister_critical: 30
+  check_interval: 10         # 健康检查间隔（秒）
+  deregister_critical: 30    # 连续不健康多久后自动摘除（秒）
 
 metrics:
   enabled: true
   path: "/metrics"
   port: 9091
 
-bloom:
+# 入站限流（令牌桶）：内部 gRPC 调用为主，阈值放宽；
+# C 端流量的严格限流由 gateway 的 rate_limit.rules 承担。
+rate_limit:
   enabled: true
-  size: 1000000
+  qps: 2000
+  burst: 4000
 
-mail:
-  smtp_host: "smtp.example.com"
-  smtp_port: 587
-  smtp_username: ""
-  smtp_password: ""
-  from_address: "noreply@blog.local"
-  use_tls: true
+# 入站 server 调优（单位：秒）。
+# 键名须与 gocommon config.ServerConfig 严格对应（server.grpc.* / server.http.* 为嵌套结构），
+# 写错键名会被 yaml 静默忽略；可由配置中心 HotConfig.server 热更覆盖。
+server:
+  grpc:
+    default_timeout_sec: 10        # 入站 gRPC 方法默认超时
+    max_connection_idle_sec: 60    # keepalive：空闲连接回收
+    max_connection_age_sec: 120    # keepalive：连接最大寿命
+    max_connection_age_grace_sec: 30 # keepalive：寿命宽限
+    min_ping_interval_sec: 30      # keepalive：客户端最小 ping 间隔
+    max_concurrent_streams: 100    # 最大并发流（仅启动期生效）
+  http:
+    read_timeout_sec: 30
+    read_header_timeout_sec: 10
+    write_timeout_sec: 30
+    idle_timeout_sec: 120
+    default_timeout_sec: 30        # 中间件整体请求超时（每次请求读取，可热更）
 
-# 可观测性（想法 3 · A+B）：默认关闭，配好基础设施后开启。详见 README 第 14.x 节。
+# 可观测性（Loki 集中日志 + OTel 链路追踪）：默认关闭，
+# `make observ-up` 拉起基础设施后置为 true 即可接入。
 loki:
   enabled: false
   url: "http://loki:3100/loki/api/v1/push"
   tenant_id: ""
+
 otel:
   enabled: false
   endpoint: "otel-collector:4317"

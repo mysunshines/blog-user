@@ -10,7 +10,7 @@ import (
 	"github.com/mysunshines/blog-user/internal/audit"
 	"github.com/mysunshines/blog-user/internal/model"
 	"github.com/mysunshines/blog-user/internal/service"
-	user "github.com/mysunshines/blog-user/proto/pb"
+	user "github.com/mysunshines/blog-user/proto/pb/v1"
 
 	"github.com/mysunshines/gocommon/captcha"
 	commonmiddleware "github.com/mysunshines/gocommon/middleware"

@@ -4,15 +4,14 @@
 // 	protoc        v6.33.4
 // source: user.proto
 
-package pb
+package v1
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -2783,7 +2782,7 @@ const file_user_proto_rawDesc = "" +
 	"\x0fAdminUpdateUser\x12\x1f.user.v1.AdminUpdateUserRequest\x1a .user.v1.AdminUpdateUserResponse\x12O\n" +
 	"\x0fAdminDeleteUser\x12\x1f.user.v1.AdminDeleteUserRequest\x1a\x1b.user.v1.DeleteUserResponse\x12Z\n" +
 	"\x11ListOperationLogs\x12!.user.v1.ListOperationLogsRequest\x1a\".user.v1.ListOperationLogsResponse\x12B\n" +
-	"\tRecordLog\x12\x19.user.v1.RecordLogRequest\x1a\x1a.user.v1.RecordLogResponseB+Z)github.com/mysunshines/blog-user/proto/pbb\x06proto3"
+	"\tRecordLog\x12\x19.user.v1.RecordLogRequest\x1a\x1a.user.v1.RecordLogResponseB.Z,github.com/mysunshines/blog-user/proto/pb/v1b\x06proto3"
 
 var (
 	file_user_proto_rawDescOnce sync.Once

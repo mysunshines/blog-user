@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/mysunshines/blog-user/internal/model"
-	user "github.com/mysunshines/blog-user/proto/pb"
+	user "github.com/mysunshines/blog-user/proto/pb/v1"
 )
 
 // ActionToShort 将 proto 枚举 AuditAction 转为落库/展示用的短动作字符串。

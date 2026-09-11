@@ -32,6 +32,8 @@ type UserRepository interface {
 	// ListUsernamesByPage 按 id 游标分页查询用户名（返回下一页游标 id），
 	// 供布隆过滤器启动预热，避免大表一次全量加载到内存
 	ListUsernamesByPage(ctx context.Context, afterID, limit uint) ([]string, uint, error)
+	// GetUsersByIDs 按 ID 批量取用户，供 decorator.v0.Decorator 装饰榜单成员使用。
+	GetUsersByIDs(ctx context.Context, ids []uint) ([]*model.User, error)
 
 	// Token操作
 	CreateToken(ctx context.Context, token *model.Token) error
@@ -105,6 +107,18 @@ func (r *userRepository) Update(ctx context.Context, user *model.User) error {
 func (r *userRepository) UpdateFields(ctx context.Context, id uint, cols map[string]interface{}) error {
 	cols["updated_at"] = time.Now()
 	return r.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", id).Updates(cols).Error
+}
+
+// GetUsersByIDs 按 ID 批量取用户，供 decorator.v0.Decorator 装饰榜单成员使用。
+func (r *userRepository) GetUsersByIDs(ctx context.Context, ids []uint) ([]*model.User, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var users []*model.User
+	if err := r.db.WithContext(ctx).Where("id IN ?", ids).Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
 }
 
 // Delete 删除用户
