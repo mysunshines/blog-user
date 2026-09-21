@@ -49,6 +49,12 @@ type UserService interface {
 	AddToBlacklist(ctx context.Context, req *model.BlacklistRequest) error
 	RemoveFromBlacklist(ctx context.Context, req *model.BlacklistRequest) error
 	IsInBlacklist(ctx context.Context, userID, targetUserID uint) (bool, error)
+
+	// 关注 / 粉丝
+	Follow(ctx context.Context, followerID, followingID uint) error
+	Unfollow(ctx context.Context, followerID, followingID uint) error
+	GetFollowStats(ctx context.Context, userID uint) (followers, following int64, err error)
+	GetFollowStatus(ctx context.Context, followerID, followingID uint) (bool, error)
 }
 
 // ValidateTokenResult Token验证结果
@@ -60,14 +66,15 @@ type ValidateTokenResult struct {
 
 // userService 用户服务实现
 type userService struct {
-	repo    repository.UserRepository
-	cfg     *goconfig.Config
-	bf      *cache.BloomFilter // gocommon Redis 布隆过滤器，缓存全量历史用户名
-	bfReady atomic.Bool        // 布隆过滤器预热完成标记，未就绪时注册走 DB 全量查重
+	repo       repository.UserRepository
+	followRepo repository.FollowRepository
+	cfg        *goconfig.Config
+	bf         *cache.BloomFilter // gocommon Redis 布隆过滤器，缓存全量历史用户名
+	bfReady    atomic.Bool        // 布隆过滤器预热完成标记，未就绪时注册走 DB 全量查重
 }
 
 // NewUserService 创建用户服务
-func NewUserService(repo repository.UserRepository, cfg *goconfig.Config) UserService {
+func NewUserService(repo repository.UserRepository, followRepo repository.FollowRepository, cfg *goconfig.Config) UserService {
 	// Redis 布隆过滤器：注册时快速预判 username 是否已存在，命中/未命中逻辑见 Register。
 	// 容量按目标量级用公式估算（m = -n·ln(p)/(ln2)², k = 0.693·m/n）：
 	//   10 万用户 @1% 误判：m≈96万bit(~120KB)、k=7
@@ -77,9 +84,10 @@ func NewUserService(repo repository.UserRepository, cfg *goconfig.Config) UserSe
 	// key 自动带 KeyPrefix。
 	bf := cache.NewBloomFilter("user:username:bloom", 100_000_000, 7)
 	s := &userService{
-		repo: repo,
-		cfg:  cfg,
-		bf:   bf,
+		repo:       repo,
+		followRepo: followRepo,
+		cfg:        cfg,
+		bf:         bf,
 	}
 
 	// 异步预热布隆过滤器（千万级用户量若同步预热，全量加载内存 + 逐条 Add RTT

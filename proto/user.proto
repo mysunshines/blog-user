@@ -68,6 +68,15 @@ service UserService {
 
     // ===================== 操作审计（各服务经 gRPC 上报，user-service 落库） =====================
     rpc RecordLog(RecordLogRequest) returns (RecordLogResponse);
+
+    // ===================== 关注 / 粉丝 =====================
+    // 关注 / 取关：follower_id 关注 following_id（不能关注自己，幂等）。需登录。
+    rpc Follow(FollowRequest) returns (FollowResponse);
+    rpc Unfollow(UnfollowRequest) returns (UnfollowResponse);
+    // 某用户的粉丝数 / 关注数（公开只读）。
+    rpc GetFollowStats(GetFollowStatsRequest) returns (GetFollowStatsResponse);
+    // 当前用户是否关注某用户（follower_id 与 following_id）。需登录。
+    rpc GetFollowStatus(GetFollowStatusRequest) returns (GetFollowStatusResponse);
 }
 
 message User {
@@ -347,4 +356,45 @@ message ListOperationLogsResponse {
     string message = 2;
     repeated OperationLog logs = 3;
     uint32 total = 4;
+}
+
+// ===================== 关注 / 粉丝 =====================
+
+message FollowRequest {
+    uint32 follower_id = 1;   // 关注者（当前登录用户）
+    uint32 following_id = 2;  // 被关注者
+}
+message FollowResponse {
+    uint32 code = 1;
+    string message = 2;
+    uint32 follower_count = 3;   // 关注者当前关注数
+    uint32 following_count = 4;  // 被关注者当前粉丝数
+}
+message UnfollowRequest {
+    uint32 follower_id = 1;
+    uint32 following_id = 2;
+}
+message UnfollowResponse {
+    uint32 code = 1;
+    string message = 2;
+    uint32 follower_count = 3;
+    uint32 following_count = 4;
+}
+message GetFollowStatsRequest {
+    uint32 user_id = 1;  // 查询对象
+}
+message GetFollowStatsResponse {
+    uint32 code = 1;
+    string message = 2;
+    uint32 follower_count = 3;  // 粉丝数（被人关注）
+    uint32 following_count = 4; // 关注数（关注别人）
+}
+message GetFollowStatusRequest {
+    uint32 follower_id = 1;
+    uint32 following_id = 2;
+}
+message GetFollowStatusResponse {
+    uint32 code = 1;
+    string message = 2;
+    bool is_following = 3;
 }

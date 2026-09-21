@@ -102,9 +102,10 @@ func NewServer(cfg *goconfig.Config, db *gorm.DB) *Server {
 
 	// 初始化仓储层
 	userRepo := repository.NewUserRepository(db)
+	followRepo := repository.NewFollowRepository(db)
 
 	// 初始化服务层
-	userSvc := service.NewUserService(userRepo, cfg)
+	userSvc := service.NewUserService(userRepo, followRepo, cfg)
 
 	return &Server{
 		cfg:      cfg,
@@ -397,6 +398,22 @@ func run() error {
 			time.Sleep(time.Duration(i+1) * time.Second)
 		}
 		log.Warnf("register author ranking board given up after retries")
+	}()
+
+	// ⑧.2 best-effort 注册用户粉丝榜配置（装饰器 = user-service，分数由关注/取关时推送）
+	go func() {
+		for i := 0; i < 5; i++ {
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			err := client.RegisterUserFansBoard(ctx)
+			cancel()
+			if err == nil {
+				log.Info("user fans ranking board registered")
+				return
+			}
+			log.Warnf("register user fans ranking board failed (attempt %d/5): %v", i+1, err)
+			time.Sleep(time.Duration(i+1) * time.Second)
+		}
+		log.Warnf("register user fans ranking board given up after retries")
 	}()
 
 	if err := server.Run(); err != nil {

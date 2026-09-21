@@ -2530,6 +2530,470 @@ func (x *ListOperationLogsResponse) GetTotal() uint32 {
 	return 0
 }
 
+type FollowRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FollowerId    uint32                 `protobuf:"varint,1,opt,name=follower_id,json=followerId,proto3" json:"follower_id,omitempty"`    // 关注者（当前登录用户）
+	FollowingId   uint32                 `protobuf:"varint,2,opt,name=following_id,json=followingId,proto3" json:"following_id,omitempty"` // 被关注者
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FollowRequest) Reset() {
+	*x = FollowRequest{}
+	mi := &file_user_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FollowRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FollowRequest) ProtoMessage() {}
+
+func (x *FollowRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FollowRequest.ProtoReflect.Descriptor instead.
+func (*FollowRequest) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *FollowRequest) GetFollowerId() uint32 {
+	if x != nil {
+		return x.FollowerId
+	}
+	return 0
+}
+
+func (x *FollowRequest) GetFollowingId() uint32 {
+	if x != nil {
+		return x.FollowingId
+	}
+	return 0
+}
+
+type FollowResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Code           uint32                 `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
+	Message        string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	FollowerCount  uint32                 `protobuf:"varint,3,opt,name=follower_count,json=followerCount,proto3" json:"follower_count,omitempty"`    // 关注者当前关注数
+	FollowingCount uint32                 `protobuf:"varint,4,opt,name=following_count,json=followingCount,proto3" json:"following_count,omitempty"` // 被关注者当前粉丝数
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *FollowResponse) Reset() {
+	*x = FollowResponse{}
+	mi := &file_user_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FollowResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FollowResponse) ProtoMessage() {}
+
+func (x *FollowResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FollowResponse.ProtoReflect.Descriptor instead.
+func (*FollowResponse) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *FollowResponse) GetCode() uint32 {
+	if x != nil {
+		return x.Code
+	}
+	return 0
+}
+
+func (x *FollowResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *FollowResponse) GetFollowerCount() uint32 {
+	if x != nil {
+		return x.FollowerCount
+	}
+	return 0
+}
+
+func (x *FollowResponse) GetFollowingCount() uint32 {
+	if x != nil {
+		return x.FollowingCount
+	}
+	return 0
+}
+
+type UnfollowRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FollowerId    uint32                 `protobuf:"varint,1,opt,name=follower_id,json=followerId,proto3" json:"follower_id,omitempty"`
+	FollowingId   uint32                 `protobuf:"varint,2,opt,name=following_id,json=followingId,proto3" json:"following_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnfollowRequest) Reset() {
+	*x = UnfollowRequest{}
+	mi := &file_user_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnfollowRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnfollowRequest) ProtoMessage() {}
+
+func (x *UnfollowRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnfollowRequest.ProtoReflect.Descriptor instead.
+func (*UnfollowRequest) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *UnfollowRequest) GetFollowerId() uint32 {
+	if x != nil {
+		return x.FollowerId
+	}
+	return 0
+}
+
+func (x *UnfollowRequest) GetFollowingId() uint32 {
+	if x != nil {
+		return x.FollowingId
+	}
+	return 0
+}
+
+type UnfollowResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Code           uint32                 `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
+	Message        string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	FollowerCount  uint32                 `protobuf:"varint,3,opt,name=follower_count,json=followerCount,proto3" json:"follower_count,omitempty"`
+	FollowingCount uint32                 `protobuf:"varint,4,opt,name=following_count,json=followingCount,proto3" json:"following_count,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *UnfollowResponse) Reset() {
+	*x = UnfollowResponse{}
+	mi := &file_user_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnfollowResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnfollowResponse) ProtoMessage() {}
+
+func (x *UnfollowResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnfollowResponse.ProtoReflect.Descriptor instead.
+func (*UnfollowResponse) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *UnfollowResponse) GetCode() uint32 {
+	if x != nil {
+		return x.Code
+	}
+	return 0
+}
+
+func (x *UnfollowResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *UnfollowResponse) GetFollowerCount() uint32 {
+	if x != nil {
+		return x.FollowerCount
+	}
+	return 0
+}
+
+func (x *UnfollowResponse) GetFollowingCount() uint32 {
+	if x != nil {
+		return x.FollowingCount
+	}
+	return 0
+}
+
+type GetFollowStatsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        uint32                 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // 查询对象
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetFollowStatsRequest) Reset() {
+	*x = GetFollowStatsRequest{}
+	mi := &file_user_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetFollowStatsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetFollowStatsRequest) ProtoMessage() {}
+
+func (x *GetFollowStatsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetFollowStatsRequest.ProtoReflect.Descriptor instead.
+func (*GetFollowStatsRequest) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *GetFollowStatsRequest) GetUserId() uint32 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+type GetFollowStatsResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Code           uint32                 `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
+	Message        string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	FollowerCount  uint32                 `protobuf:"varint,3,opt,name=follower_count,json=followerCount,proto3" json:"follower_count,omitempty"`    // 粉丝数（被人关注）
+	FollowingCount uint32                 `protobuf:"varint,4,opt,name=following_count,json=followingCount,proto3" json:"following_count,omitempty"` // 关注数（关注别人）
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *GetFollowStatsResponse) Reset() {
+	*x = GetFollowStatsResponse{}
+	mi := &file_user_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetFollowStatsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetFollowStatsResponse) ProtoMessage() {}
+
+func (x *GetFollowStatsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetFollowStatsResponse.ProtoReflect.Descriptor instead.
+func (*GetFollowStatsResponse) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *GetFollowStatsResponse) GetCode() uint32 {
+	if x != nil {
+		return x.Code
+	}
+	return 0
+}
+
+func (x *GetFollowStatsResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *GetFollowStatsResponse) GetFollowerCount() uint32 {
+	if x != nil {
+		return x.FollowerCount
+	}
+	return 0
+}
+
+func (x *GetFollowStatsResponse) GetFollowingCount() uint32 {
+	if x != nil {
+		return x.FollowingCount
+	}
+	return 0
+}
+
+type GetFollowStatusRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FollowerId    uint32                 `protobuf:"varint,1,opt,name=follower_id,json=followerId,proto3" json:"follower_id,omitempty"`
+	FollowingId   uint32                 `protobuf:"varint,2,opt,name=following_id,json=followingId,proto3" json:"following_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetFollowStatusRequest) Reset() {
+	*x = GetFollowStatusRequest{}
+	mi := &file_user_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetFollowStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetFollowStatusRequest) ProtoMessage() {}
+
+func (x *GetFollowStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetFollowStatusRequest.ProtoReflect.Descriptor instead.
+func (*GetFollowStatusRequest) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *GetFollowStatusRequest) GetFollowerId() uint32 {
+	if x != nil {
+		return x.FollowerId
+	}
+	return 0
+}
+
+func (x *GetFollowStatusRequest) GetFollowingId() uint32 {
+	if x != nil {
+		return x.FollowingId
+	}
+	return 0
+}
+
+type GetFollowStatusResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Code          uint32                 `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	IsFollowing   bool                   `protobuf:"varint,3,opt,name=is_following,json=isFollowing,proto3" json:"is_following,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetFollowStatusResponse) Reset() {
+	*x = GetFollowStatusResponse{}
+	mi := &file_user_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetFollowStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetFollowStatusResponse) ProtoMessage() {}
+
+func (x *GetFollowStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetFollowStatusResponse.ProtoReflect.Descriptor instead.
+func (*GetFollowStatusResponse) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *GetFollowStatusResponse) GetCode() uint32 {
+	if x != nil {
+		return x.Code
+	}
+	return 0
+}
+
+func (x *GetFollowStatusResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *GetFollowStatusResponse) GetIsFollowing() bool {
+	if x != nil {
+		return x.IsFollowing
+	}
+	return false
+}
+
 var File_user_proto protoreflect.FileDescriptor
 
 const file_user_proto_rawDesc = "" +
@@ -2715,7 +3179,40 @@ const file_user_proto_rawDesc = "" +
 	"\x04code\x18\x01 \x01(\rR\x04code\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12)\n" +
 	"\x04logs\x18\x03 \x03(\v2\x15.user.v1.OperationLogR\x04logs\x12\x14\n" +
-	"\x05total\x18\x04 \x01(\rR\x05total*\xc7\x03\n" +
+	"\x05total\x18\x04 \x01(\rR\x05total\"S\n" +
+	"\rFollowRequest\x12\x1f\n" +
+	"\vfollower_id\x18\x01 \x01(\rR\n" +
+	"followerId\x12!\n" +
+	"\ffollowing_id\x18\x02 \x01(\rR\vfollowingId\"\x8e\x01\n" +
+	"\x0eFollowResponse\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\rR\x04code\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12%\n" +
+	"\x0efollower_count\x18\x03 \x01(\rR\rfollowerCount\x12'\n" +
+	"\x0ffollowing_count\x18\x04 \x01(\rR\x0efollowingCount\"U\n" +
+	"\x0fUnfollowRequest\x12\x1f\n" +
+	"\vfollower_id\x18\x01 \x01(\rR\n" +
+	"followerId\x12!\n" +
+	"\ffollowing_id\x18\x02 \x01(\rR\vfollowingId\"\x90\x01\n" +
+	"\x10UnfollowResponse\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\rR\x04code\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12%\n" +
+	"\x0efollower_count\x18\x03 \x01(\rR\rfollowerCount\x12'\n" +
+	"\x0ffollowing_count\x18\x04 \x01(\rR\x0efollowingCount\"0\n" +
+	"\x15GetFollowStatsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\rR\x06userId\"\x96\x01\n" +
+	"\x16GetFollowStatsResponse\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\rR\x04code\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12%\n" +
+	"\x0efollower_count\x18\x03 \x01(\rR\rfollowerCount\x12'\n" +
+	"\x0ffollowing_count\x18\x04 \x01(\rR\x0efollowingCount\"\\\n" +
+	"\x16GetFollowStatusRequest\x12\x1f\n" +
+	"\vfollower_id\x18\x01 \x01(\rR\n" +
+	"followerId\x12!\n" +
+	"\ffollowing_id\x18\x02 \x01(\rR\vfollowingId\"j\n" +
+	"\x17GetFollowStatusResponse\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\rR\x04code\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12!\n" +
+	"\fis_following\x18\x03 \x01(\bR\visFollowing*\xc7\x03\n" +
 	"\rUserErrorCode\x12\x10\n" +
 	"\fUSER_SUCCESS\x10\x00\x12\x18\n" +
 	"\x13USER_INTERNAL_ERROR\x10\x95N\x12\x19\n" +
@@ -2760,8 +3257,7 @@ const file_user_proto_rawDesc = "" +
 	"!AUDIT_ACTION_ARTICLE_SET_CATEGORY\x10\x1c\x12 \n" +
 	"\x1cAUDIT_ACTION_CATEGORY_CREATE\x10\x1e\x12 \n" +
 	"\x1cAUDIT_ACTION_CATEGORY_UPDATE\x10\x1f\x12 \n" +
-	"\x1cAUDIT_ACTION_CATEGORY_DELETE\x10 2\xc1\n" +
-	"\n" +
+	"\x1cAUDIT_ACTION_CATEGORY_DELETE\x10 2\xe6\f\n" +
 	"\vUserService\x12?\n" +
 	"\bRegister\x12\x18.user.v1.RegisterRequest\x1a\x19.user.v1.RegisterResponse\x126\n" +
 	"\x05Login\x12\x15.user.v1.LoginRequest\x1a\x16.user.v1.LoginResponse\x12T\n" +
@@ -2782,7 +3278,11 @@ const file_user_proto_rawDesc = "" +
 	"\x0fAdminUpdateUser\x12\x1f.user.v1.AdminUpdateUserRequest\x1a .user.v1.AdminUpdateUserResponse\x12O\n" +
 	"\x0fAdminDeleteUser\x12\x1f.user.v1.AdminDeleteUserRequest\x1a\x1b.user.v1.DeleteUserResponse\x12Z\n" +
 	"\x11ListOperationLogs\x12!.user.v1.ListOperationLogsRequest\x1a\".user.v1.ListOperationLogsResponse\x12B\n" +
-	"\tRecordLog\x12\x19.user.v1.RecordLogRequest\x1a\x1a.user.v1.RecordLogResponseB.Z,github.com/mysunshines/blog-user/proto/pb/v1b\x06proto3"
+	"\tRecordLog\x12\x19.user.v1.RecordLogRequest\x1a\x1a.user.v1.RecordLogResponse\x129\n" +
+	"\x06Follow\x12\x16.user.v1.FollowRequest\x1a\x17.user.v1.FollowResponse\x12?\n" +
+	"\bUnfollow\x12\x18.user.v1.UnfollowRequest\x1a\x19.user.v1.UnfollowResponse\x12Q\n" +
+	"\x0eGetFollowStats\x12\x1e.user.v1.GetFollowStatsRequest\x1a\x1f.user.v1.GetFollowStatsResponse\x12T\n" +
+	"\x0fGetFollowStatus\x12\x1f.user.v1.GetFollowStatusRequest\x1a .user.v1.GetFollowStatusResponseB.Z,github.com/mysunshines/blog-user/proto/pb/v1b\x06proto3"
 
 var (
 	file_user_proto_rawDescOnce sync.Once
@@ -2797,7 +3297,7 @@ func file_user_proto_rawDescGZIP() []byte {
 }
 
 var file_user_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_user_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
+var file_user_proto_msgTypes = make([]protoimpl.MessageInfo, 43)
 var file_user_proto_goTypes = []any{
 	(UserErrorCode)(0),                // 0: user.v1.UserErrorCode
 	(AuditAction)(0),                  // 1: user.v1.AuditAction
@@ -2836,6 +3336,14 @@ var file_user_proto_goTypes = []any{
 	(*AdminDeleteUserRequest)(nil),    // 34: user.v1.AdminDeleteUserRequest
 	(*ListOperationLogsRequest)(nil),  // 35: user.v1.ListOperationLogsRequest
 	(*ListOperationLogsResponse)(nil), // 36: user.v1.ListOperationLogsResponse
+	(*FollowRequest)(nil),             // 37: user.v1.FollowRequest
+	(*FollowResponse)(nil),            // 38: user.v1.FollowResponse
+	(*UnfollowRequest)(nil),           // 39: user.v1.UnfollowRequest
+	(*UnfollowResponse)(nil),          // 40: user.v1.UnfollowResponse
+	(*GetFollowStatsRequest)(nil),     // 41: user.v1.GetFollowStatsRequest
+	(*GetFollowStatsResponse)(nil),    // 42: user.v1.GetFollowStatsResponse
+	(*GetFollowStatusRequest)(nil),    // 43: user.v1.GetFollowStatusRequest
+	(*GetFollowStatusResponse)(nil),   // 44: user.v1.GetFollowStatusResponse
 }
 var file_user_proto_depIdxs = []int32{
 	2,  // 0: user.v1.RegisterResponse.user:type_name -> user.v1.User
@@ -2865,26 +3373,34 @@ var file_user_proto_depIdxs = []int32{
 	34, // 24: user.v1.UserService.AdminDeleteUser:input_type -> user.v1.AdminDeleteUserRequest
 	35, // 25: user.v1.UserService.ListOperationLogs:input_type -> user.v1.ListOperationLogsRequest
 	28, // 26: user.v1.UserService.RecordLog:input_type -> user.v1.RecordLogRequest
-	4,  // 27: user.v1.UserService.Register:output_type -> user.v1.RegisterResponse
-	6,  // 28: user.v1.UserService.Login:output_type -> user.v1.LoginResponse
-	9,  // 29: user.v1.UserService.GenerateCaptcha:output_type -> user.v1.GenerateCaptchaResponse
-	10, // 30: user.v1.UserService.Logout:output_type -> user.v1.LogoutResponse
-	12, // 31: user.v1.UserService.GetUser:output_type -> user.v1.GetUserResponse
-	14, // 32: user.v1.UserService.ValidateToken:output_type -> user.v1.ValidateTokenResponse
-	16, // 33: user.v1.UserService.UpdateUser:output_type -> user.v1.UpdateUserResponse
-	18, // 34: user.v1.UserService.DeleteUser:output_type -> user.v1.DeleteUserResponse
-	20, // 35: user.v1.UserService.GetUsers:output_type -> user.v1.GetUsersResponse
-	22, // 36: user.v1.UserService.ChangePassword:output_type -> user.v1.ChangePasswordResponse
-	24, // 37: user.v1.UserService.AddToBlacklist:output_type -> user.v1.BlacklistResponse
-	24, // 38: user.v1.UserService.RemoveFromBlacklist:output_type -> user.v1.BlacklistResponse
-	26, // 39: user.v1.UserService.IsInBlacklist:output_type -> user.v1.IsBlacklistResponse
-	31, // 40: user.v1.UserService.AdminGetUsers:output_type -> user.v1.AdminGetUsersResponse
-	33, // 41: user.v1.UserService.AdminUpdateUser:output_type -> user.v1.AdminUpdateUserResponse
-	18, // 42: user.v1.UserService.AdminDeleteUser:output_type -> user.v1.DeleteUserResponse
-	36, // 43: user.v1.UserService.ListOperationLogs:output_type -> user.v1.ListOperationLogsResponse
-	29, // 44: user.v1.UserService.RecordLog:output_type -> user.v1.RecordLogResponse
-	27, // [27:45] is the sub-list for method output_type
-	9,  // [9:27] is the sub-list for method input_type
+	37, // 27: user.v1.UserService.Follow:input_type -> user.v1.FollowRequest
+	39, // 28: user.v1.UserService.Unfollow:input_type -> user.v1.UnfollowRequest
+	41, // 29: user.v1.UserService.GetFollowStats:input_type -> user.v1.GetFollowStatsRequest
+	43, // 30: user.v1.UserService.GetFollowStatus:input_type -> user.v1.GetFollowStatusRequest
+	4,  // 31: user.v1.UserService.Register:output_type -> user.v1.RegisterResponse
+	6,  // 32: user.v1.UserService.Login:output_type -> user.v1.LoginResponse
+	9,  // 33: user.v1.UserService.GenerateCaptcha:output_type -> user.v1.GenerateCaptchaResponse
+	10, // 34: user.v1.UserService.Logout:output_type -> user.v1.LogoutResponse
+	12, // 35: user.v1.UserService.GetUser:output_type -> user.v1.GetUserResponse
+	14, // 36: user.v1.UserService.ValidateToken:output_type -> user.v1.ValidateTokenResponse
+	16, // 37: user.v1.UserService.UpdateUser:output_type -> user.v1.UpdateUserResponse
+	18, // 38: user.v1.UserService.DeleteUser:output_type -> user.v1.DeleteUserResponse
+	20, // 39: user.v1.UserService.GetUsers:output_type -> user.v1.GetUsersResponse
+	22, // 40: user.v1.UserService.ChangePassword:output_type -> user.v1.ChangePasswordResponse
+	24, // 41: user.v1.UserService.AddToBlacklist:output_type -> user.v1.BlacklistResponse
+	24, // 42: user.v1.UserService.RemoveFromBlacklist:output_type -> user.v1.BlacklistResponse
+	26, // 43: user.v1.UserService.IsInBlacklist:output_type -> user.v1.IsBlacklistResponse
+	31, // 44: user.v1.UserService.AdminGetUsers:output_type -> user.v1.AdminGetUsersResponse
+	33, // 45: user.v1.UserService.AdminUpdateUser:output_type -> user.v1.AdminUpdateUserResponse
+	18, // 46: user.v1.UserService.AdminDeleteUser:output_type -> user.v1.DeleteUserResponse
+	36, // 47: user.v1.UserService.ListOperationLogs:output_type -> user.v1.ListOperationLogsResponse
+	29, // 48: user.v1.UserService.RecordLog:output_type -> user.v1.RecordLogResponse
+	38, // 49: user.v1.UserService.Follow:output_type -> user.v1.FollowResponse
+	40, // 50: user.v1.UserService.Unfollow:output_type -> user.v1.UnfollowResponse
+	42, // 51: user.v1.UserService.GetFollowStats:output_type -> user.v1.GetFollowStatsResponse
+	44, // 52: user.v1.UserService.GetFollowStatus:output_type -> user.v1.GetFollowStatusResponse
+	31, // [31:53] is the sub-list for method output_type
+	9,  // [9:31] is the sub-list for method input_type
 	9,  // [9:9] is the sub-list for extension type_name
 	9,  // [9:9] is the sub-list for extension extendee
 	0,  // [0:9] is the sub-list for field type_name
@@ -2901,7 +3417,7 @@ func file_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_proto_rawDesc), len(file_user_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   35,
+			NumMessages:   43,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
