@@ -37,7 +37,7 @@ database:
   password: "root123"
   name: "blog"
   max_open_conns: 25   # 多实例安全：4 服务 × 25 = 100 < MySQL 默认 151
-  max_idle_conns: 5
+  max_idle_conns: 25
   conn_max_lifetime: 3600
 
 redis:
